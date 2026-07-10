@@ -1,5 +1,10 @@
+set(ROCKET_RESOURCES
+    resources.qrc
+)
+
 set(ROCKET_SOURCES
     main.cpp
+    ${ROCKET_RESOURCES}
     core/session.cpp
     core/shell.cpp
     core/dbus_service.cpp

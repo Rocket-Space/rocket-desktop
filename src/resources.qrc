@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+        <file>../qml/panel/Panel.qml</file>
+        <file>../qml/launcher/Launcher.qml</file>
+        <file>../qml/overview/Overview.qml</file>
+        <file>../qml/notifications/NotificationPopup.qml</file>
+        <file>../qml/settings/SettingsWindow.qml</file>
+        <file>../qml/clipboard/ClipboardHistory.qml</file>
+        <file>../qml/common/Theme.qml</file>
+    </qresource>
+</RCC>
