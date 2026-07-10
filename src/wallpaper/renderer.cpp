@@ -42,7 +42,7 @@ WallpaperRenderer::WallpaperRenderer(QWindow* parent)
     }
 
     m_engine = new QQmlEngine(this);
-    m_component = new QQmlComponent(m_engine, QUrl("qrc:/qml/WallpaperRenderer.qml"));
+    m_component = new QQmlComponent(m_engine, QUrl("qrc:/qml/wallpaper/WallpaperRenderer.qml"));
     if (!m_component->isError()) {
         QQuickItem* root = qobject_cast<QQuickItem*>(m_component->create());
         if (root) {

@@ -7,5 +7,7 @@
         <file>../qml/settings/SettingsWindow.qml</file>
         <file>../qml/clipboard/ClipboardHistory.qml</file>
         <file>../qml/common/Theme.qml</file>
+        <file>../qml/common/qmldir</file>
+        <file>../qml/wallpaper/WallpaperRenderer.qml</file>
     </qresource>
 </RCC>
