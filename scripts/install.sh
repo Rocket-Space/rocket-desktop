@@ -133,7 +133,7 @@ install_systemd() {
 install_launcher() {
     echo -e "${CYAN}[*] Installing launch script...${NC}"
 
-    sudo cp "$SCRIPT_DIR/launch.sh" /usr/bin/rocket-session
+    sudo cp "$SCRIPT_DIR/session.sh" /usr/bin/rocket-session
     sudo chmod +x /usr/bin/rocket-session
 
     echo -e "${GREEN}[OK] Launch script installed at /usr/bin/rocket-session${NC}"
