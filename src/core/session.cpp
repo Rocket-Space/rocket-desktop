@@ -28,8 +28,6 @@ bool Session::isRunning() const { return m_running; }
 int Session::componentCount() const { return m_components.size(); }
 
 void Session::setupEnvironment() {
-    qputenv("QT_QPA_PLATFORM", "wayland");
-    qputenv("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1");
     qputenv("XDG_CURRENT_DESKTOP", "Rocket");
     qputenv("XDG_SESSION_TYPE", "wayland");
     qputenv("ROCKET_VERSION", "1.0.0");
