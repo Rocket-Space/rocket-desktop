@@ -1,0 +1,13 @@
+[Unit]
+Description=Rocket Notifications
+PartOf=rocket-session.target
+After=rocket-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/rocket-notifications
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=rocket-session.target

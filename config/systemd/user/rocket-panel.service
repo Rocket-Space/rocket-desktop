@@ -1,0 +1,13 @@
+[Unit]
+Description=Rocket Panel
+PartOf=rocket-session.target
+After=rocket-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/rocket-panel
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=rocket-session.target

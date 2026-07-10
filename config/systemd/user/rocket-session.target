@@ -1,0 +1,18 @@
+[Unit]
+Description=Rocket Session
+After=graphical-session.target
+Requires=graphical-session.target
+Wants=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/rocket-session
+Restart=on-failure
+RestartSec=5
+Environment=QT_QPA_PLATFORM=wayland
+Environment=QT_WAYLAND_DISABLE_WINDOWDECORATION=1
+Environment=XDG_CURRENT_DESKTOP=Rocket
+Environment=XDG_SESSION_TYPE=wayland
+
+[Install]
+WantedBy=graphical-session.target

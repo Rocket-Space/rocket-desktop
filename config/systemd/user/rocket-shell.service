@@ -1,0 +1,13 @@
+[Unit]
+Description=Rocket Shell
+PartOf=rocket-session.target
+After=rocket-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/rocket-shell
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=rocket-session.target
