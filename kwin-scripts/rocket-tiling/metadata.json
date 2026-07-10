@@ -1,0 +1,16 @@
+{
+    "KPackageStructure": "KWin/Script",
+    "KPlugin": {
+        "Id": "rocket-tiling",
+        "Name": "Rocket Tiling",
+        "Description": "Dynamic tiling engine for Rocket Desktop",
+        "Author": "Rocket-Space",
+        "License": "GPL-3.0",
+        "Version": "1.0.0",
+        "Website": "https://github.com/Rocket-Space/rocket-desktop",
+        "Category": "Utilities"
+    },
+    "X-Plasma-API": "javascript",
+    "X-Plasma-MainScript": "code/main.js",
+    "X-KWin-Config-Model": "config/main.xml"
+}

@@ -1,0 +1,16 @@
+{
+    "KPackageStructure": "KWin/Effect",
+    "KPlugin": {
+        "Id": "rocket-animations",
+        "Name": "Rocket Animations",
+        "Description": "Configurable window animations for Rocket Desktop",
+        "Author": "Rocket-Space",
+        "License": "GPL-3.0",
+        "Version": "1.0.0",
+        "Website": "https://github.com/Rocket-Space/rocket-desktop",
+        "Category": "Appearance"
+    },
+    "X-Plasma-API": "declarativescript",
+    "X-Plasma-MainScript": "ui/main.qml",
+    "X-KWin-Config-Model": "config/main.xml"
+}

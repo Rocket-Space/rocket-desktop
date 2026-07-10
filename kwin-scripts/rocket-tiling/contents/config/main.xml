@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+                          http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+    <kcfgfile name=""/>
+    <group name="General">
+        <entry name="layout" type="String">
+            <default>master</default>
+            <label>Tiling layout (master, dwindle, columns, monocle, float)</label>
+        </entry>
+        <entry name="gap" type="Int">
+            <default>8</default>
+            <min>0</min>
+            <max>50</max>
+            <label>Gap between windows in pixels</label>
+        </entry>
+        <entry name="borderSize" type="Int">
+            <default>2</default>
+            <min>0</min>
+            <max>10</max>
+            <label>Window border size</label>
+        </entry>
+        <entry name="activeBorderColor" type="String">
+            <default>#00d4ff</default>
+            <label>Active window border color</label>
+        </entry>
+        <entry name="inactiveBorderColor" type="String">
+            <default>#333355</default>
+            <label>Inactive window border color</label>
+        </entry>
+        <entry name="floatingBorderColor" type="String">
+            <default>#ff00aa</default>
+            <label>Floating window border color</label>
+        </entry>
+        <entry name="masterRatio" type="Double">
+            <default>0.55</default>
+            <min>0.2</min>
+            <max>0.8</max>
+            <label>Master area ratio (0.0 - 1.0)</label>
+        </entry>
+        <entry name="masterCount" type="Int">
+            <default>1</default>
+            <min>1</min>
+            <max>6</max>
+            <label>Number of master windows</label>
+        </entry>
+        <entry name="dwindleRatio" type="Double">
+            <default>0.55</default>
+            <min>0.2</min>
+            <max>0.8</max>
+            <label>Dwindle split ratio</label>
+        </entry>
+        <entry name="columnCount" type="Int">
+            <default>3</default>
+            <min>2</min>
+            <max>8</max>
+            <label>Number of columns</label>
+        </entry>
+        <entry name="noBorder" type="Bool">
+            <default>false</default>
+            <label>Remove window borders completely</label>
+        </entry>
+        <entry name="preventAutotile" type="String">
+            <default></default>
+            <label>Comma-separated window classes to never tile</label>
+        </entry>
+        <entry name="forceFloat" type="String">
+            <default></default>
+            <label>Comma-separated window classes to always float</label>
+        </entry>
+    </group>
+</kcfg>
