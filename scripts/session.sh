@@ -37,7 +37,8 @@ echo "$KWIN_PID" > "$ROCKET_PID_FILE"
 
 echo "[$(date)] Rocket: Waiting for Wayland display..." >> "$ROCKET_LOG"
 for i in $(seq 1 30); do
-    if [ -n "$WAYLAND_DISPLAY" ] && [ -e "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]; then
+    if [ -e "$XDG_RUNTIME_DIR/wayland-0" ]; then
+        export WAYLAND_DISPLAY="wayland-0"
         break
     fi
     sleep 0.2
