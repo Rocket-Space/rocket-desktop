@@ -56,11 +56,7 @@ echo "[$(date)] Rocket: Starting components..." >> "$ROCKET_LOG"
 $ROCKET_BIN --panel >> "$ROCKET_LOG" 2>&1 &
 $ROCKET_BIN --wallpaper >> "$ROCKET_LOG" 2>&1 &
 $ROCKET_BIN --notifications >> "$ROCKET_LOG" 2>&1 &
-$ROCKET_BIN --clipboard >> "$ROCKET_LOG" 2>&1 &
-$ROCKET_BIN --screenshot >> "$ROCKET_LOG" 2>&1 &
 $ROCKET_BIN --settings >> "$ROCKET_LOG" 2>&1 &
-$ROCKET_BIN --launcher >> "$ROCKET_LOG" 2>&1 &
-$ROCKET_BIN --overview >> "$ROCKET_LOG" 2>&1 &
 $ROCKET_BIN --power >> "$ROCKET_LOG" 2>&1 &
 
 echo "[$(date)] Rocket: All components launched" >> "$ROCKET_LOG"

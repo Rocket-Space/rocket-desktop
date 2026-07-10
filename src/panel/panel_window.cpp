@@ -1,28 +1,83 @@
 #include "panel_window.h"
+#include <QScreen>
+#include <QGuiApplication>
+#include <QDBusConnection>
+#include <QQuickItem>
 
 namespace Rocket {
 
-PanelWindow::PanelWindow(QObject* parent) : QObject(parent) {}
-PanelWindow::~PanelWindow() {}
+PanelWindowAdaptor::PanelWindowAdaptor(QObject* parent)
+    : QDBusAbstractAdaptor(parent) {}
 
-int PanelWindow::width() const { return m_width; }
-int PanelWindow::height() const { return m_height; }
-int PanelWindow::x() const { return m_x; }
-int PanelWindow::y() const { return m_y; }
-QString PanelWindow::position() const { return m_position; }
-bool PanelWindow::isVisible() const { return m_visible; }
-float PanelWindow::opacity() const { return m_opacity; }
+void PanelWindowAdaptor::Toggle() {
+    auto* w = qobject_cast<PanelWindow*>(parent());
+    if (w) w->toggle();
+}
 
-void PanelWindow::setWidth(int w) { if (m_width != w) { m_width = w; emit widthChanged(); } }
-void PanelWindow::setHeight(int h) { if (m_height != h) { m_height = h; emit heightChanged(); } }
-void PanelWindow::setX(int x) { if (m_x != x) { m_x = x; emit xChanged(); } }
-void PanelWindow::setY(int y) { if (m_y != y) { m_y = y; emit yChanged(); } }
-void PanelWindow::setPosition(const QString& pos) { if (m_position != pos) { m_position = pos; emit positionChanged(); } }
-void PanelWindow::setVisible(bool v) { if (m_visible != v) { m_visible = v; emit visibleChanged(); } }
-void PanelWindow::setOpacity(float o) { if (m_opacity != o) { m_opacity = o; emit opacityChanged(); } }
+void PanelWindowAdaptor::Show() {
+    auto* w = qobject_cast<PanelWindow*>(parent());
+    if (w) w->show();
+}
 
-void PanelWindow::toggle() { setVisible(!m_visible); }
-void PanelWindow::show() { setVisible(true); }
-void PanelWindow::hide() { setVisible(false); }
+void PanelWindowAdaptor::Hide() {
+    auto* w = qobject_cast<PanelWindow*>(parent());
+    if (w) w->hide();
+}
+
+PanelWindow::PanelWindow(QWindow* parent)
+    : QQuickWindow(parent)
+    , m_adaptor(new PanelWindowAdaptor(this)) {
+    setFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
+    setColor(Qt::transparent);
+    setTitle("Rocket Panel");
+
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (screen) {
+        int sw = screen->availableGeometry().width();
+        int sh = screen->availableGeometry().height();
+        setGeometry(8, sh - 52, sw - 16, 44);
+    }
+
+    m_engine = new QQmlEngine(this);
+    m_component = new QQmlComponent(m_engine, QUrl("qrc:/qml/panel/Panel.qml"));
+    if (!m_component->isError()) {
+        QQuickItem* root = qobject_cast<QQuickItem*>(m_component->create());
+        if (root) {
+            root->setParentItem(contentItem());
+        }
+    } else {
+        qWarning() << "Panel QML errors:" << m_component->errorString();
+    }
+
+    QDBusConnection bus = QDBusConnection::sessionBus();
+    bus.registerService("org.rocket.Panel");
+    bus.registerObject("/org/rocket/Panel", this);
+}
+
+PanelWindow::~PanelWindow() {
+    delete m_component;
+    delete m_engine;
+}
+
+bool PanelWindow::panelVisible() const { return m_visible; }
+int PanelWindow::panelHeight() const { return 44; }
+
+void PanelWindow::show() {
+    m_visible = true;
+    QQuickWindow::show();
+    QQuickWindow::raise();
+    emit panelVisibleChanged();
+}
+
+void PanelWindow::hide() {
+    m_visible = false;
+    QQuickWindow::hide();
+    emit panelVisibleChanged();
+}
+
+void PanelWindow::toggle() {
+    if (m_visible) hide();
+    else show();
+}
 
 }
