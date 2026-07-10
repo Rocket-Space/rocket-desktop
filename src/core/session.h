@@ -3,12 +3,16 @@
 #include <QObject>
 #include <QProcess>
 #include <QTimer>
-#include <QList>
 #include <QMap>
+#include "dbus_service.h"
+#include "config_manager.h"
 
-namespace Rocket {
-
-class DBusService;
+namespace Rocket { class PanelWindow; }
+class WallpaperRenderer;
+class LauncherWindow;
+class OverviewWindow;
+class SettingsWindow;
+class ClipboardHistoryWindow;
 
 class Session : public QObject {
     Q_OBJECT
@@ -35,18 +39,22 @@ signals:
 
 private slots:
     void onComponentFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void startComponents();
 
 private:
     bool m_running = false;
     QProcess* m_kwinProcess = nullptr;
     QMap<QString, QProcess*> m_components;
-    DBusService* m_dbus = nullptr;
-    QTimer* m_startupTimer = nullptr;
+    Rocket::DBusService* m_dbus = nullptr;
+
+    Rocket::PanelWindow* m_panelWindow = nullptr;
+    WallpaperRenderer* m_wallpaperWindow = nullptr;
+    LauncherWindow* m_launcherWindow = nullptr;
+    OverviewWindow* m_overviewWindow = nullptr;
+    SettingsWindow* m_settingsWindow = nullptr;
+    ClipboardHistoryWindow* m_clipboardWindow = nullptr;
 
     bool startKWin();
-    void startComponent(const QString& name, const QString& binary, const QStringList& args = {});
     void setupEnvironment();
     void registerDBus();
 };
-
-}

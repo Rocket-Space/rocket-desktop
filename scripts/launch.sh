@@ -17,8 +17,10 @@ export XDG_SESSION_TYPE=wayland
 export ROCKET_VERSION=1.0.0
 export QT_QPA_PLATFORMTHEME=qt6ct
 
+export ROCKET_LOG="$HOME/.rocket-session.log"
+
 if [ -f "$(dirname "$0")/build/src/rocket-session" ]; then
-    exec "$(dirname "$0")/build/src/rocket-session" "$@"
+    exec "$(dirname "$0")/build/src/rocket-session" "$@" > "$ROCKET_LOG" 2>&1
 else
-    exec rocket-session "$@"
+    exec rocket-session "$@" > "$ROCKET_LOG" 2>&1
 fi

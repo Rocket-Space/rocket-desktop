@@ -3,8 +3,8 @@
 #include <QQmlContext>
 #include <QQuickStyle>
 #include <QIcon>
+#include <QDebug>
 #include "core/session.h"
-#include "core/shell.h"
 #include "core/config_manager.h"
 
 int main(int argc, char* argv[]) {
@@ -16,17 +16,28 @@ int main(int argc, char* argv[]) {
     QQuickStyle::setStyle("Universal");
     QIcon::setThemeName("hicolor");
 
+    qDebug() << "Rocket: Starting...";
+    qDebug() << "Rocket: Qt version" << qVersion();
+    qDebug() << "Rocket: Platform" << qApp->platformName();
+
     Rocket::ConfigManager::instance().load();
 
-    QQmlApplicationEngine engine;
+    Session session;
 
-    Rocket::Session session;
-    Rocket::Shell shell;
+    QObject::connect(&session, &Session::componentStarted, [](const QString& name) {
+        qDebug() << "Rocket: Component started:" << name;
+    });
 
-    engine.rootContext()->setContextProperty("rocketSession", &session);
-    engine.rootContext()->setContextProperty("rocketShell", &shell);
+    QObject::connect(&session, &Session::componentStopped, [](const QString& name) {
+        qDebug() << "Rocket: Component stopped:" << name;
+    });
 
-    session.start();
+    if (!session.start()) {
+        qCritical() << "Rocket: Failed to start session";
+        return 1;
+    }
+
+    qDebug() << "Rocket: Session started, entering event loop";
 
     return app.exec();
 }

@@ -2,16 +2,23 @@
 #include "dbus_service.h"
 #include "config_manager.h"
 #include "dbus_paths.h"
+#include "panel/panel_window.h"
+#include "notifications/daemon.h"
+#include "notifications/popup.h"
+#include "wallpaper/renderer.h"
+#include "clipboard/manager.h"
+#include "clipboard/history_window.h"
+#include "screenshot/screenshot_tool.h"
+#include "launcher/launcher_window.h"
+#include "overview/overview_window.h"
+#include "settings/settings_window.h"
 #include <QCoreApplication>
-#include <QProcessEnvironment>
 #include <QDir>
 #include <QDebug>
 
-namespace Rocket {
-
 Session::Session(QObject* parent)
     : QObject(parent)
-    , m_dbus(new DBusService(this))
+    , m_dbus(new Rocket::DBusService(this))
 {
 }
 
@@ -40,7 +47,7 @@ bool Session::startKWin() {
     QString kwinBin = "/usr/bin/kwin_wayland";
 
     if (!QFile::exists(kwinBin)) {
-        qCritical() << "KWin not found at" << kwinBin;
+        qCritical() << "Rocket: KWin not found at" << kwinBin;
         return false;
     }
 
@@ -48,14 +55,13 @@ bool Session::startKWin() {
     args << "--no-lockscreen"
          << "--no-global-shortcuts"
          << "--locale1"
-         << "--xwayland"
-         << "--inputmethod"
-         << "MESA_LOADER_DRIVER_OVERRIDE=zink NVIDIA EGLImplementation=eglangle"
-         << "--socket", "rocket-kwin";
+         << "--xwayland";
+
+    qDebug() << "Rocket: Starting KWin from" << kwinBin << args;
 
     m_kwinProcess->start(kwinBin, args);
     if (!m_kwinProcess->waitForStarted(5000)) {
-        qCritical() << "Failed to start KWin";
+        qCritical() << "Rocket: Failed to start KWin";
         return false;
     }
 
@@ -64,22 +70,38 @@ bool Session::startKWin() {
     return true;
 }
 
-void Session::startComponent(const QString& name, const QString& binary, const QStringList& args) {
-    if (m_components.contains(name)) return;
+void Session::startComponents() {
+    qDebug() << "Rocket: Starting components...";
 
-    QProcess* proc = new QProcess(this);
-    connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this, &Session::onComponentFinished);
+    m_panelWindow = new Rocket::PanelWindow(this);
+    m_panelWindow->show();
 
-    proc->start(binary, args);
-    if (proc->waitForStarted(3000)) {
-        m_components[name] = proc;
-        emit componentStarted(name);
-        emit componentCountChanged();
-    } else {
-        qWarning() << "Failed to start component:" << name << "at" << binary;
-        delete proc;
-    }
+    NotificationDaemon::instance();
+
+    m_wallpaperWindow = new WallpaperRenderer();
+    m_wallpaperWindow->show();
+
+    ClipboardManager::instance();
+
+    m_launcherWindow = new LauncherWindow();
+    m_launcherWindow->hide();
+
+    m_overviewWindow = new OverviewWindow();
+    m_overviewWindow->hide();
+
+    m_settingsWindow = new SettingsWindow();
+    m_settingsWindow->hide();
+
+    m_clipboardWindow = new ClipboardHistoryWindow();
+    m_clipboardWindow->hide();
+
+    ScreenshotTool::instance();
+
+    m_running = true;
+    emit runningChanged();
+    emit componentCountChanged();
+
+    qDebug() << "Rocket: All components started";
 }
 
 bool Session::start() {
@@ -87,30 +109,28 @@ bool Session::start() {
 
     setupEnvironment();
     registerDBus();
+    Rocket::ConfigManager::instance().load();
 
-    ConfigManager::instance().load();
+    if (!startKWin()) {
+        qCritical() << "Rocket: Cannot start without KWin";
+        return false;
+    }
 
-    if (!startKWin()) return false;
-
-    QTimer::singleShot(1000, this, [this]() {
-        QString bin = QCoreApplication::applicationDirPath();
-
-        startComponent("panel", bin + "/rocket-panel");
-        startComponent("notifications", bin + "/rocket-notifications");
-        startComponent("wallpaper", bin + "/rocket-wallpaper");
-        startComponent("clipboard", bin + "/rocket-clipboard");
-        startComponent("screenshot", bin + "/rocket-screenshot");
-
-        m_running = true;
-        emit runningChanged();
-
-        QTimer::singleShot(2000, this, &Session::allComponentsReady);
-    });
+    QTimer::singleShot(2000, this, &Session::startComponents);
 
     return true;
 }
 
 void Session::stop() {
+    m_running = false;
+
+    delete m_panelWindow; m_panelWindow = nullptr;
+    delete m_wallpaperWindow; m_wallpaperWindow = nullptr;
+    delete m_launcherWindow; m_launcherWindow = nullptr;
+    delete m_overviewWindow; m_overviewWindow = nullptr;
+    delete m_settingsWindow; m_settingsWindow = nullptr;
+    delete m_clipboardWindow; m_clipboardWindow = nullptr;
+
     for (auto it = m_components.begin(); it != m_components.end(); ++it) {
         if (it.value() && it.value()->state() != QProcess::NotRunning) {
             it.value()->terminate();
@@ -122,21 +142,17 @@ void Session::stop() {
 
     qDeleteAll(m_components);
     m_components.clear();
-    m_running = false;
+
     emit runningChanged();
     emit componentCountChanged();
 }
 
 void Session::restartComponent(const QString& name) {
-    if (m_components.contains(name)) {
-        QProcess* old = m_components.take(name);
-        old->terminate();
-        old->waitForFinished(2000);
-        delete old;
-    }
+    Q_UNUSED(name);
 }
 
 void Session::onComponentFinished(int exitCode, QProcess::ExitStatus exitStatus) {
+    Q_UNUSED(exitStatus);
     QProcess* proc = qobject_cast<QProcess*>(sender());
     if (!proc) return;
 
@@ -149,19 +165,14 @@ void Session::onComponentFinished(int exitCode, QProcess::ExitStatus exitStatus)
     }
 
     if (!name.isEmpty()) {
-        qWarning() << "Component" << name << "exited with code" << exitCode;
+        qWarning() << "Rocket: Component" << name << "exited with code" << exitCode;
         m_components.remove(name);
         emit componentStopped(name);
         emit componentCountChanged();
 
         if (name == "kwin") {
+            qDebug() << "Rocket: KWin exited, shutting down";
             stop();
-        } else if (name == "panel") {
-            QTimer::singleShot(1000, this, [this]() {
-                startComponent("panel", QCoreApplication::applicationDirPath() + "/rocket-panel");
-            });
         }
     }
-}
-
 }

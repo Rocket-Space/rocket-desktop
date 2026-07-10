@@ -70,6 +70,17 @@ add_executable(rocket-session ${ROCKET_SOURCES} ${ROCKET_HEADERS})
 target_include_directories(rocket-session PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/common
+    ${CMAKE_CURRENT_SOURCE_DIR}/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/panel
+    ${CMAKE_CURRENT_SOURCE_DIR}/panel/widgets
+    ${CMAKE_CURRENT_SOURCE_DIR}/launcher
+    ${CMAKE_CURRENT_SOURCE_DIR}/overview
+    ${CMAKE_CURRENT_SOURCE_DIR}/notifications
+    ${CMAKE_CURRENT_SOURCE_DIR}/wallpaper
+    ${CMAKE_CURRENT_SOURCE_DIR}/settings
+    ${CMAKE_CURRENT_SOURCE_DIR}/power
+    ${CMAKE_CURRENT_SOURCE_DIR}/clipboard
+    ${CMAKE_CURRENT_SOURCE_DIR}/screenshot
     ${Qt6Gui_PRIVATE_INCLUDE_DIRS}
 )
 
