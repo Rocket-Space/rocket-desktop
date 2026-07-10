@@ -5,8 +5,6 @@ set(ROCKET_RESOURCES
 set(ROCKET_SOURCES
     main.cpp
     ${ROCKET_RESOURCES}
-    core/session.cpp
-    core/shell.cpp
     core/dbus_service.cpp
     core/config_manager.cpp
     panel/panel_window.cpp
@@ -30,8 +28,6 @@ set(ROCKET_SOURCES
 )
 
 set(ROCKET_HEADERS
-    core/session.h
-    core/shell.h
     core/dbus_service.h
     core/config_manager.h
     panel/panel_window.h
@@ -65,9 +61,9 @@ set(ROCKET_QML
     ../qml/common/Theme.qml
 )
 
-add_executable(rocket-session ${ROCKET_SOURCES} ${ROCKET_HEADERS})
+add_executable(rocket-session-bin ${ROCKET_SOURCES} ${ROCKET_HEADERS})
 
-target_include_directories(rocket-session PRIVATE
+target_include_directories(rocket-session-bin PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/common
     ${CMAKE_CURRENT_SOURCE_DIR}/core
@@ -84,7 +80,7 @@ target_include_directories(rocket-session PRIVATE
     ${Qt6Gui_PRIVATE_INCLUDE_DIRS}
 )
 
-target_link_libraries(rocket-session PRIVATE
+target_link_libraries(rocket-session-bin PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Qml
@@ -98,9 +94,9 @@ target_link_libraries(rocket-session PRIVATE
     ${DBUS_LIBRARIES}
 )
 
-target_include_directories(rocket-session PRIVATE
+target_include_directories(rocket-session-bin PRIVATE
     ${WAYLAND_CLIENT_INCLUDE_DIRS}
     ${DBUS_INCLUDE_DIRS}
 )
 
-install(TARGETS rocket-session RUNTIME DESTINATION ${ROCKET_BIN_DIR})
+install(TARGETS rocket-session-bin RUNTIME DESTINATION ${ROCKET_BIN_DIR})
