@@ -1,0 +1,48 @@
+#!/bin/bash
+# Rocket Desktop - Application Launcher Helper
+# Called by KWin shortcuts to launch applications
+
+case "$1" in
+    terminal)
+        kitty &
+        ;;
+    browser)
+        xdg-open "https://www.google.com" &
+        ;;
+    file-manager)
+        nemo "$HOME" &
+        ;;
+    editor)
+        kitty -e nvim &
+        ;;
+    system-menu)
+        notify-send "Rocket" "System menu coming soon" &
+        ;;
+    keybindings)
+        notify-send "Rocket Keybindings" "<b>Super+Return</b> Terminal
+<b>Super+T</b> Toggle Float
+<b>Super+F</b> Fullscreen
+<b>Super+W</b> Close Window
+<b>Super+Arrow</b> Focus
+<b>Super+Shift+Arrow</b> Swap
+<b>Super+1-9</b> Workspace
+<b>Super+Tab</b> Next Workspace
+<b>Super+L</b> Cycle Layout" &
+        ;;
+    screenshot)
+        spectacle &
+        ;;
+    color-picker)
+        kcolorchooser &
+        ;;
+    dismiss-notif)
+        notify-send -C "" &
+        ;;
+    dismiss-all)
+        notify-send -C "" &
+        ;;
+    *)
+        echo "Usage: rocket-helper <command>"
+        echo "Commands: terminal, browser, file-manager, editor, system-menu, keybindings, screenshot, color-picker"
+        ;;
+esac

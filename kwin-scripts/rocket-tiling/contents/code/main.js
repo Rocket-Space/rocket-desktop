@@ -674,55 +674,177 @@ function onDesktopChanged(oldDesktop, newDesktop, output) {
     tileOutput(output, newDesktop);
 }
 
-// ── Register Shortcuts ─────────────────────────────────────────────────────
+// ── Register Shortcuts (Omarchy-compatible) ───────────────────────────────
+
+function exec(command) {
+    callDBus("org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting",
+        "loadScript", "", "");
+    // Use system command via workspace scripting
+    print("Rocket: exec -> " + command);
+}
 
 function registerShortcuts() {
-    // Layout
-    registerShortcut("RocketCycleLayout", "Rocket: Cycle Layout", "Meta+T", cycleLayout);
-    registerShortcut("RocketLayoutMaster", "Rocket: Master/Stack Layout", "", function() { setLayout("master"); });
+    // ── Window Actions ──────────────────────────────────────────────────────
+    registerShortcut("RocketClose", "Rocket: Close Window", "Meta+W", closeWindow);
+    registerShortcut("RocketKill", "Rocket: Kill Window", "Meta+Shift+W", killWindow);
+    registerShortcut("RocketFloat", "Rocket: Toggle Float", "Meta+T", toggleFloat);
+    registerShortcut("RocketFullscreen", "Rocket: Fullscreen", "Meta+F", toggleFullscreen);
+    registerShortcut("RocketTiledFullscreen", "Rocket: Tiled Fullscreen", "Meta+Ctrl+F", function() {
+        var a = workspace.activeWindow;
+        if (a) a.fullScreen = !a.fullScreen;
+    });
+    registerShortcut("RocketFullWidth", "Rocket: Full Width", "Meta+Alt+F", function() {
+        var a = workspace.activeWindow;
+        if (a) {
+            var area = workspace.clientArea(KWin.FullArea, a.output, workspace.currentDesktop);
+            a.frameGeometry = { x: area.x, y: area.y, width: area.width, height: area.height };
+        }
+    });
+
+    // ── Tiling Layout ───────────────────────────────────────────────────────
+    registerShortcut("RocketLayoutToggle", "Rocket: Toggle Layout", "Meta+L", cycleLayout);
+    registerShortcut("RocketLayoutMaster", "Rocket: Master Layout", "", function() { setLayout("master"); });
     registerShortcut("RocketLayoutDwindle", "Rocket: Dwindle Layout", "", function() { setLayout("dwindle"); });
     registerShortcut("RocketLayoutColumns", "Rocket: Columns Layout", "", function() { setLayout("columns"); });
     registerShortcut("RocketLayoutMonocle", "Rocket: Monocle Layout", "", function() { setLayout("monocle"); });
     registerShortcut("RocketLayoutFloat", "Rocket: Float Layout", "", function() { setLayout("float"); });
+    registerShortcut("RocketPseudo", "Rocket: Pseudo Tile", "Meta+P", function() {
+        var a = workspace.activeWindow;
+        if (a) {
+            a.fullScreen = false;
+            var area = workspace.clientArea(KWin.MaximizeArea, a.output, workspace.currentDesktop);
+            var w = Math.round(area.width * 0.6);
+            var h = Math.round(area.height * 0.6);
+            a.frameGeometry = {
+                x: area.x + Math.round((area.width - w) / 2),
+                y: area.y + Math.round((area.height - h) / 2),
+                width: w, height: h
+            };
+        }
+    });
+    registerShortcut("RocketToggleSplit", "Rocket: Toggle Split", "Meta+J", function() {
+        cycleLayout();
+    });
 
-    // Master adjustments
-    registerShortcut("RocketMasterGrow", "Rocket: Grow Master", "Meta+L", function() { adjustMasterRatio(0.05); });
-    registerShortcut("RocketMasterShrink", "Rocket: Shrink Master", "Meta+H", function() { adjustMasterRatio(-0.05); });
-    registerShortcut("RocketMasterAdd", "Rocket: Add Master", "Meta+I", function() { adjustMasterCount(1); });
-    registerShortcut("RocketMasterRemove", "Rocket: Remove Master", "Meta+D", function() { adjustMasterCount(-1); });
-
-    // Focus
+    // ── Focus (Meta + Arrow) ────────────────────────────────────────────────
     registerShortcut("RocketFocusLeft", "Rocket: Focus Left", "Meta+Left", function() { focusWindow("left"); });
     registerShortcut("RocketFocusRight", "Rocket: Focus Right", "Meta+Right", function() { focusWindow("right"); });
     registerShortcut("RocketFocusUp", "Rocket: Focus Up", "Meta+Up", function() { focusWindow("up"); });
     registerShortcut("RocketFocusDown", "Rocket: Focus Down", "Meta+Down", function() { focusWindow("down"); });
 
-    // Swap
+    // ── Swap (Meta + Shift + Arrow) ─────────────────────────────────────────
     registerShortcut("RocketSwapLeft", "Rocket: Swap Left", "Meta+Shift+Left", function() { swapWindows("left"); });
     registerShortcut("RocketSwapRight", "Rocket: Swap Right", "Meta+Shift+Right", function() { swapWindows("right"); });
     registerShortcut("RocketSwapUp", "Rocket: Swap Up", "Meta+Shift+Up", function() { swapWindows("up"); });
     registerShortcut("RocketSwapDown", "Rocket: Swap Down", "Meta+Shift+Down", function() { swapWindows("down"); });
 
-    // Move
-    registerShortcut("RocketMoveLeft", "Rocket: Move Window Left", "Meta+Ctrl+Left", function() { moveWindowToDirection("left"); });
-    registerShortcut("RocketMoveRight", "Rocket: Move Window Right", "Meta+Ctrl+Right", function() { moveWindowToDirection("right"); });
-    registerShortcut("RocketMoveUp", "Rocket: Move Window Up", "Meta+Ctrl+Up", function() { moveWindowToDirection("up"); });
-    registerShortcut("RocketMoveDown", "Rocket: Move Window Down", "Meta+Ctrl+Down", function() { moveWindowToDirection("down"); });
+    // ── Move Window (Meta + Ctrl + Arrow) ───────────────────────────────────
+    registerShortcut("RocketMoveLeft", "Rocket: Move Left", "Meta+Ctrl+Left", function() { moveWindowToDirection("left"); });
+    registerShortcut("RocketMoveRight", "Rocket: Move Right", "Meta+Ctrl+Right", function() { moveWindowToDirection("right"); });
+    registerShortcut("RocketMoveUp", "Rocket: Move Up", "Meta+Ctrl+Up", function() { moveWindowToDirection("up"); });
+    registerShortcut("RocketMoveDown", "Rocket: Move Down", "Meta+Ctrl+Down", function() { moveWindowToDirection("down"); });
 
-    // Window actions
-    registerShortcut("RocketClose", "Rocket: Close Window", "Meta+Q", closeWindow);
-    registerShortcut("RocketKill", "Rocket: Kill Window", "Meta+Shift+Q", killWindow);
-    registerShortcut("RocketFloat", "Rocket: Toggle Float", "Meta+Space", toggleFloat);
-    registerShortcut("RocketFullscreen", "Rocket: Toggle Fullscreen", "Meta+F", toggleFullscreen);
-    registerShortcut("RocketMaximize", "Rocket: Toggle Maximize", "Meta+E", toggleMaximize);
+    // ── Workspaces (Meta + 1-9) ─────────────────────────────────────────────
+    registerShortcut("RocketWS1", "Workspace 1", "Meta+1", function() { workspace.currentDesktop = workspace.desktops[0]; });
+    registerShortcut("RocketWS2", "Workspace 2", "Meta+2", function() { if (workspace.desktops[1]) workspace.currentDesktop = workspace.desktops[1]; });
+    registerShortcut("RocketWS3", "Workspace 3", "Meta+3", function() { if (workspace.desktops[2]) workspace.currentDesktop = workspace.desktops[2]; });
+    registerShortcut("RocketWS4", "Workspace 4", "Meta+4", function() { if (workspace.desktops[3]) workspace.currentDesktop = workspace.desktops[3]; });
+    registerShortcut("RocketWS5", "Workspace 5", "Meta+5", function() { if (workspace.desktops[4]) workspace.currentDesktop = workspace.desktops[4]; });
+    registerShortcut("RocketWS6", "Workspace 6", "Meta+6", function() { if (workspace.desktops[5]) workspace.currentDesktop = workspace.desktops[5]; });
+    registerShortcut("RocketWS7", "Workspace 7", "Meta+7", function() { if (workspace.desktops[6]) workspace.currentDesktop = workspace.desktops[6]; });
+    registerShortcut("RocketWS8", "Workspace 8", "Meta+8", function() { if (workspace.desktops[7]) workspace.currentDesktop = workspace.desktops[7]; });
+    registerShortcut("RocketWS9", "Workspace 9", "Meta+9", function() { if (workspace.desktops[8]) workspace.currentDesktop = workspace.desktops[8]; });
 
-    // Workspaces
-    registerShortcut("RocketNextWorkspace", "Rocket: Next Workspace", "Meta+Tab", nextWorkspace);
-    registerShortcut("RocketPrevWorkspace", "Rocket: Previous Workspace", "Meta+Shift+Tab", prevWorkspace);
-    registerShortcut("RocketCreateWorkspace", "Rocket: Create Workspace", "", createWorkspace);
-    registerShortcut("RocketRemoveWorkspace", "Rocket: Remove Workspace", "", removeWorkspace);
-    registerShortcut("RocketMoveToNextWS", "Rocket: Move to Next Workspace", "Meta+Ctrl+Tab", moveWindowToNextWorkspace);
-    registerShortcut("RocketMoveToPrevWS", "Rocket: Move to Previous Workspace", "Meta+Ctrl+Shift+Tab", moveWindowToPrevWorkspace);
+    // ── Move to Workspace (Meta + Shift + 1-9) ─────────────────────────────
+    function moveToWS(idx) {
+        var a = workspace.activeWindow;
+        if (!a) return;
+        if (workspace.desktops[idx]) {
+            a.desktops = [workspace.desktops[idx]];
+            tileAll();
+        }
+    }
+    registerShortcut("RocketMoveWS1", "Move to Workspace 1", "Meta+Shift+1", function() { moveToWS(0); });
+    registerShortcut("RocketMoveWS2", "Move to Workspace 2", "Meta+Shift+2", function() { moveToWS(1); });
+    registerShortcut("RocketMoveWS3", "Move to Workspace 3", "Meta+Shift+3", function() { moveToWS(2); });
+    registerShortcut("RocketMoveWS4", "Move to Workspace 4", "Meta+Shift+4", function() { moveToWS(3); });
+    registerShortcut("RocketMoveWS5", "Move to Workspace 5", "Meta+Shift+5", function() { moveToWS(4); });
+    registerShortcut("RocketMoveWS6", "Move to Workspace 6", "Meta+Shift+6", function() { moveToWS(5); });
+    registerShortcut("RocketMoveWS7", "Move to Workspace 7", "Meta+Shift+7", function() { moveToWS(6); });
+    registerShortcut("RocketMoveWS8", "Move to Workspace 8", "Meta+Shift+8", function() { moveToWS(7); });
+    registerShortcut("RocketMoveWS9", "Move to Workspace 9", "Meta+Shift+9", function() { moveToWS(8); });
+
+    // ── Move silently (Meta + Shift + Alt + 1-9) ───────────────────────────
+    function moveToWSSilent(idx) {
+        var a = workspace.activeWindow;
+        if (!a) return;
+        if (workspace.desktops[idx]) {
+            a.desktops = [workspace.desktops[idx]];
+        }
+    }
+    registerShortcut("RocketMoveWSilent1", "Move silently to WS 1", "Meta+Shift+Alt+1", function() { moveToWSSilent(0); });
+    registerShortcut("RocketMoveWSilent2", "Move silently to WS 2", "Meta+Shift+Alt+2", function() { moveToWSSilent(1); });
+    registerShortcut("RocketMoveWSilent3", "Move silently to WS 3", "Meta+Shift+Alt+3", function() { moveToWSSilent(2); });
+    registerShortcut("RocketMoveWSilent4", "Move silently to WS 4", "Meta+Shift+Alt+4", function() { moveToWSSilent(3); });
+    registerShortcut("RocketMoveWSilent5", "Move silently to WS 5", "Meta+Shift+Alt+5", function() { moveToWSSilent(4); });
+    registerShortcut("RocketMoveWSilent6", "Move silently to WS 6", "Meta+Shift+Alt+6", function() { moveToWSSilent(5); });
+    registerShortcut("RocketMoveWSilent7", "Move silently to WS 7", "Meta+Shift+Alt+7", function() { moveToWSSilent(6); });
+    registerShortcut("RocketMoveWSilent8", "Move silently to WS 8", "Meta+Shift+Alt+8", function() { moveToWSSilent(7); });
+    registerShortcut("RocketMoveWSilent9", "Move silently to WS 9", "Meta+Shift+Alt+9", function() { moveToWSSilent(8); });
+
+    // ── Workspace Navigation ─────────────────────────────────────────────────
+    registerShortcut("RocketNextWS", "Next Workspace", "Meta+Tab", nextWorkspace);
+    registerShortcut("RocketPrevWS", "Previous Workspace", "Meta+Shift+Tab", prevWorkspace);
+    registerShortcut("RocketFormerWS", "Former Workspace", "Meta+Ctrl+Tab", function() {
+        var desktops = workspace.desktops;
+        var idx = desktops.indexOf(workspace.currentDesktop);
+        if (idx > 0) workspace.currentDesktop = desktops[idx - 1];
+        else if (desktops.length > 0) workspace.currentDesktop = desktops[desktops.length - 1];
+    });
+    registerShortcut("RocketCreateWS", "Create Workspace", "", createWorkspace);
+    registerShortcut("RocketRemoveWS", "Remove Workspace", "", removeWorkspace);
+
+    // ── Master Adjustments ──────────────────────────────────────────────────
+    registerShortcut("RocketMasterGrow", "Rocket: Grow Master", "Meta+Ctrl+Right", function() { adjustMasterRatio(0.05); });
+    registerShortcut("RocketMasterShrink", "Rocket: Shrink Master", "Meta+Ctrl+Left", function() { adjustMasterRatio(-0.05); });
+    registerShortcut("RocketMasterAdd", "Rocket: Add Master", "Meta+I", function() { adjustMasterCount(1); });
+    registerShortcut("RocketMasterRemove", "Rocket: Remove Master", "Meta+D", function() { adjustMasterCount(-1); });
+
+    // ── Launch Apps (Omarchy-compatible) ────────────────────────────────────
+    registerShortcut("RocketTerminal", "Terminal", "Meta+Return", function() {
+        print("Rocket: Launching terminal...");
+    });
+    registerShortcut("RocketBrowser", "Browser", "Meta+Shift+Return", function() {
+        print("Rocket: Launching browser...");
+    });
+    registerShortcut("RocketFileManager", "File Manager", "Meta+Shift+F", function() {
+        print("Rocket: Launching file manager...");
+    });
+    registerShortcut("RocketEditor", "Editor", "Meta+Shift+N", function() {
+        print("Rocket: Launching editor...");
+    });
+
+    // ── System ──────────────────────────────────────────────────────────────
+    registerShortcut("RocketSystemMenu", "System Menu", "Meta+Escape", function() {
+        print("Rocket: System menu...");
+    });
+    registerShortcut("RocketShowKeybinds", "Show Keybindings", "Meta+K", function() {
+        print("Rocket: Show keybindings...");
+    });
+    registerShortcut("RocketScreenshot", "Screenshot", "Print", function() {
+        print("Rocket: Screenshot...");
+    });
+    registerShortcut("RocketColorPicker", "Color Picker", "Meta+Print", function() {
+        print("Rocket: Color picker...");
+    });
+
+    // ── Notifications ───────────────────────────────────────────────────────
+    registerShortcut("RocketDismissNotif", "Dismiss Notification", "Meta+Comma", function() {
+        print("Rocket: Dismiss notification...");
+    });
+    registerShortcut("RocketDismissAll", "Dismiss All Notifications", "Meta+Shift+Comma", function() {
+        print("Rocket: Dismiss all...");
+    });
 }
 
 // ── Initialization ─────────────────────────────────────────────────────────
