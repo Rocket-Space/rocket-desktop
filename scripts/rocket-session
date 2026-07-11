@@ -71,6 +71,33 @@ launch_rocket() {
         exit 1
     fi
 
+    # ── Clean conflicting KWin shortcuts ─────────────────────────────────────
+    echo "[$(date)] Rocket: Cleaning conflicting shortcuts..." >> "$ROCKET_LOG"
+    KGLOBAL="$HOME/.config/kglobalshortcutsrc"
+    if [ -f "$KGLOBAL" ]; then
+        # Collect all Rocket default keys
+        ROCKET_KEYS=$(grep "^Rocket" "$KGLOBAL" | awk -F= '{split($2,a,","); if(a[1]!="none") print a[1]}')
+        # Clear any KWin built-in user shortcut that conflicts
+        TMPFILE=$(mktemp)
+        while IFS= read -r line; do
+            if [[ "$line" == *=* ]] && [[ "$line" != Rocket* ]] && [[ "$line" != \[* ]] && [[ "$line" != _* ]]; then
+                IFS='=' read -r key val <<< "$line"
+                IFS=',' read -r def user desc <<< "$val"
+                if [ "$user" != "none" ] && [ -n "$user" ]; then
+                    for rk in $ROCKET_KEYS; do
+                        if echo "$user" | grep -qF "$rk"; then
+                            val="$def,none,$desc"
+                            line="$key=$val"
+                            break
+                        fi
+                    done
+                fi
+            fi
+            echo "$line"
+        done < "$KGLOBAL" > "$TMPFILE"
+        mv "$TMPFILE" "$KGLOBAL"
+    fi
+
     # Start KWin
     echo "[$(date)] Rocket: Starting KWin compositor..." >> "$ROCKET_LOG"
     kwin_wayland --no-lockscreen --locale1 --xwayland &
