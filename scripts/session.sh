@@ -23,6 +23,17 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+# Return to SDDM when session ends
+return_to_sddm() {
+    echo "[$(date)] Rocket: Returning to display manager..." >> "$ROCKET_LOG"
+    # Try to restart SDDM greeter
+    if command -v sddm-greeter &>/dev/null; then
+        sddm-greeter --socket /tmp/sddm-* --theme /usr/share/sddm/themes/ 2>/dev/null &
+    elif systemctl is-active sddm &>/dev/null; then
+        sudo systemctl restart sddm 2>/dev/null || true
+    fi
+}
+
 echo "[$(date)] Rocket: Starting session..." > "$ROCKET_LOG"
 
 if [ ! -x "$ROCKET_BIN" ]; then
@@ -90,3 +101,4 @@ echo "[$(date)] Rocket: Use 'rocketctl status' to check status" >> "$ROCKET_LOG"
 
 wait $KWIN_PID
 echo "[$(date)] Rocket: KWin exited" >> "$ROCKET_LOG"
+return_to_sddm
