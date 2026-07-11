@@ -684,13 +684,13 @@ function registerShortcuts() {
     // ── Window Actions ──────────────────────────────────────────────────────
     registerShortcut("RocketClose", "Rocket: Close Window", "Meta+W", closeWindow);
     registerShortcut("RocketKill", "Rocket: Kill Window", "Meta+Shift+W", killWindow);
-    registerShortcut("RocketFloat", "Rocket: Toggle Float", "Meta+T", toggleFloat);
-    registerShortcut("RocketFullscreen", "Rocket: Fullscreen", "Meta+F", toggleFullscreen);
-    registerShortcut("RocketTiledFullscreen", "Rocket: Tiled Fullscreen", "Meta+Ctrl+F", function() {
+    registerShortcut("RocketFloat", "Rocket: Toggle Float", "Meta+Shift+V", toggleFloat);
+    registerShortcut("RocketFullscreen", "Rocket: Fullscreen", "Meta+Ctrl+Return", toggleFullscreen);
+    registerShortcut("RocketTiledFullscreen", "Rocket: Tiled Fullscreen", "Alt+F11", function() {
         var a = workspace.activeWindow;
         if (a) a.fullScreen = !a.fullScreen;
     });
-    registerShortcut("RocketFullWidth", "Rocket: Full Width", "Meta+Alt+F", function() {
+    registerShortcut("RocketFullWidth", "Rocket: Full Width", "Alt+F11", function() {
         var a = workspace.activeWindow;
         if (a) {
             var area = workspace.clientArea(KWin.FullArea, a.output, workspace.currentDesktop);
@@ -699,7 +699,7 @@ function registerShortcuts() {
     });
 
     // ── Tiling Layout ───────────────────────────────────────────────────────
-    registerShortcut("RocketLayoutToggle", "Rocket: Toggle Layout", "Meta+L", cycleLayout);
+    registerShortcut("RocketLayoutToggle", "Rocket: Toggle Layout", "Meta+Space", cycleLayout);
     registerShortcut("RocketLayoutMaster", "Rocket: Master Layout", "", function() { setLayout("master"); });
     registerShortcut("RocketLayoutDwindle", "Rocket: Dwindle Layout", "", function() { setLayout("dwindle"); });
     registerShortcut("RocketLayoutColumns", "Rocket: Columns Layout", "", function() { setLayout("columns"); });
