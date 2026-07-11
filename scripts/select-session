@@ -1,0 +1,63 @@
+#!/bin/bash
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+clear
+echo -e "${CYAN}"
+echo "  ╔═══════════════════════════════════╗"
+echo "  ║       Select Desktop Session      ║"
+echo "  ╚═══════════════════════════════════╝"
+echo -e "${NC}"
+echo ""
+echo -e "  ${GREEN}1)${NC} Rocket Desktop    ${YELLOW}(tiling, cyberpunk)${NC}"
+echo -e "  ${GREEN}2)${NC} KDE Plasma        ${YELLOW}(full desktop)${NC}"
+echo -e "  ${GREEN}3)${NC} Omarchy           ${YELLOW}(hyprland)${NC}"
+echo -e "  ${GREEN}4)${NC} Exit to shell"
+echo ""
+echo -ne "  ${CYAN}Choose [1-4]: ${NC}"
+
+read -r choice
+
+case "$choice" in
+    1)
+        echo -e "\n${GREEN}Starting Rocket Desktop...${NC}"
+        exec rocket-session
+        ;;
+    2)
+        echo -e "\n${GREEN}Starting KDE Plasma...${NC}"
+        if [ -f /usr/bin/startplasma-wayland ]; then
+            exec startplasma-wayland
+        elif [ -f /usr/bin/startplasma ]; then
+            exec startplasma
+        else
+            echo -e "${RED}KDE Plasma not found${NC}"
+            sleep 2
+            exec "$0"
+        fi
+        ;;
+    3)
+        echo -e "\n${GREEN}Starting Omarchy...${NC}"
+        if [ -f "$HOME/.local/share/omarchy/bin/omarchy" ]; then
+            exec "$HOME/.local/share/omarchy/bin/omarchy"
+        elif command -v Hyprland &>/dev/null; then
+            exec Hyprland
+        else
+            echo -e "${RED}Omarchy/Hyprland not found${NC}"
+            sleep 2
+            exec "$0"
+        fi
+        ;;
+    4)
+        echo -e "${YELLOW}Dropping to shell...${NC}"
+        exit 0
+        ;;
+    *)
+        echo -e "${RED}Invalid option${NC}"
+        sleep 1
+        exec "$0"
+        ;;
+esac
