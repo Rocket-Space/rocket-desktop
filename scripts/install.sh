@@ -46,7 +46,7 @@ echo -e "${GREEN}[OK] Binary installed${NC}"
 
 # 5. Install session script
 echo -e "${CYAN}[*] Installing session script...${NC}"
-sudo cp "$PROJECT_DIR/scripts/session.sh" /usr/bin/rocket-session
+sudo cp "$PROJECT_DIR/scripts/rocket-session" /usr/bin/rocket-session
 sudo chmod +x /usr/bin/rocket-session
 echo -e "${GREEN}[OK] Session script installed${NC}"
 
