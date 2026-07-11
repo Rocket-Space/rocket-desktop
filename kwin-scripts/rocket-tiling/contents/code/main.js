@@ -850,20 +850,30 @@ function registerShortcuts() {
 // ── Initialization ─────────────────────────────────────────────────────────
 
 function init() {
+    print("Rocket: ==========================================");
     print("Rocket: Tiling engine v1.0.0 initializing...");
+    print("Rocket: Layout: " + config.layout);
+    print("Rocket: Gap: " + config.gap);
+    print("Rocket: Screens: " + workspace.screens.length);
+    print("Rocket: Desktops: " + workspace.desktops.length);
+    print("Rocket: Windows: " + workspace.windowList().length);
 
     registerShortcuts();
+    print("Rocket: Shortcuts registered");
 
     // Connect signals
     workspace.windowAdded.connect(onWindowAdded);
     workspace.windowRemoved.connect(onWindowRemoved);
     workspace.windowActivated.connect(onWindowActivated);
     workspace.currentDesktopChanged.connect(onDesktopChanged);
+    print("Rocket: Signals connected");
 
     // Initial tile
     tileAll();
+    print("Rocket: Initial tile done");
 
-    print("Rocket: Tiling engine ready. Layout: " + config.layout);
+    print("Rocket: Tiling engine READY. Layout: " + config.layout);
+    print("Rocket: ==========================================");
 }
 
 init();

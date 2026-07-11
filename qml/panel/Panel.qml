@@ -9,9 +9,13 @@ Item {
 
     property int activeWorkspace: 0
     property var windows: []
-    property var trayItems: []
     property string clockTime: Qt.formatDateTime(new Date(), "HH:mm")
     property bool launcherVisible: false
+    property var defaultTray: [
+        { icon: "\u26A1", itemId: "battery" },
+        { icon: "\u2756", itemId: "network" },
+        { icon: "\u266B", itemId: "volume" }
+    ]
 
     signal workspaceChanged(int index)
     signal windowClicked(int id)
@@ -19,10 +23,10 @@ Item {
     signal launcherToggled()
     signal statusClicked(string area)
 
-    width: parent.width - 16
+    width: Window.width || 800
     height: 44
-    anchors.horizontalCenter: parent.horizontalCenter
-    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent ? parent.horizontalCenter : undefined
+    anchors.bottom: parent ? parent.bottom : undefined
     anchors.bottomMargin: 8
 
     Timer {
@@ -39,13 +43,6 @@ Item {
         border.color: Common.Theme.border
         border.width: 1
         radius: Common.Theme.radius
-
-        Rectangle {
-            anchors.fill: parent
-            radius: Common.Theme.radius
-            color: "transparent"
-            clip: true
-        }
     }
 
     RowLayout {
@@ -63,11 +60,11 @@ Item {
                 model: 4
 
                 Rectangle {
-                    width: activeWorkspace === index ? 16 : 8
+                    width: root.activeWorkspace === index ? 16 : 8
                     height: 8
                     radius: 4
-                    color: activeWorkspace === index ? Common.Theme.accent : Common.Theme.text
-                    opacity: activeWorkspace === index ? 1.0 : 0.3
+                    color: root.activeWorkspace === index ? Common.Theme.accent : Common.Theme.text
+                    opacity: root.activeWorkspace === index ? 1.0 : 0.3
 
                     Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
                     Behavior on color { ColorAnimation { duration: 200 } }
@@ -113,8 +110,6 @@ Item {
                     radius: 6
                     color: isActive ? Common.Theme.withAlpha(Common.Theme.accent, 0.15) : "transparent"
 
-                    Behavior on color { ColorAnimation { duration: 150 } }
-
                     RowLayout {
                         anchors.fill: parent
                         anchors.leftMargin: 8
@@ -137,29 +132,6 @@ Item {
                             color: isActive ? Common.Theme.accent : Common.Theme.text
                             elide: Text.ElideRight
                             maximumLineCount: 1
-                        }
-
-                        Rectangle {
-                            width: 14
-                            height: 14
-                            radius: 7
-                            color: closeArea.containsMouse ? Common.Theme.error : "transparent"
-                            visible: windowButton.hovered
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "\u00D7"
-                                font.pixelSize: 12
-                                color: Common.Theme.error
-                            }
-
-                            MouseArea {
-                                id: closeArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.windowCloseClicked(modelData.id)
-                            }
                         }
                     }
 
@@ -199,7 +171,7 @@ Item {
             Layout.alignment: Qt.AlignVCenter
 
             Repeater {
-                model: root.trayItems.length > 0 ? root.trayItems : defaultTray
+                model: root.defaultTray
 
                 Item {
                     width: 20
@@ -222,13 +194,6 @@ Item {
                         onClicked: root.statusClicked(modelData.itemId || "")
                     }
                 }
-            }
-
-            ListModel {
-                id: defaultTray
-                ListElement { icon: "\u26A1"; itemId: "battery" }
-                ListElement { icon: "\u2756"; itemId: "network" }
-                ListElement { icon: "\u266B"; itemId: "volume" }
             }
         }
 
