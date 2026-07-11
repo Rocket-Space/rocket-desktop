@@ -93,7 +93,11 @@ qdbus6 org.kde.KWin /Effects org.kde.KWin.Effects.loadEffect "blur" 2>/dev/null 
 # ── Launch shell components ────────────────────────────────────────────────
 echo "[$(date)] Rocket: Starting components..." >> "$ROCKET_LOG"
 
-# Start krunner for app launching shortcuts
+# Start rocket-launcher DBus service for app launching shortcuts
+rocket-launcher &
+sleep 1
+
+# Start krunner for app launching shortcuts (if available)
 krunner --daemon 2>/dev/null &
 $ROCKET_BIN --panel >> "$ROCKET_LOG" 2>&1 &
 $ROCKET_BIN --wallpaper >> "$ROCKET_LOG" 2>&1 &

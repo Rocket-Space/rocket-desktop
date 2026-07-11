@@ -677,7 +677,7 @@ function onDesktopChanged(oldDesktop, newDesktop, output) {
 // ── Register Shortcuts (Omarchy-compatible) ───────────────────────────────
 
 function exec(command) {
-    callDBus("org.kde.krunner", "/krunner", "org.kde.krunner.run", "Run", command);
+    callDBus("org.Rocket.Launcher", "/org/rocket/launcher", "org.Rocket.Launcher", "Exec", command);
 }
 
 function registerShortcuts() {
