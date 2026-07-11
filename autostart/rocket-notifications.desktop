@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Rocket Notifications
+Exec=/usr/bin/rocket-session-bin --notifications
+X-GNOME-Autostart-enabled=true

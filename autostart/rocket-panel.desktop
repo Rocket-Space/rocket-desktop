@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Rocket Panel
+Exec=/usr/bin/rocket-session-bin --panel
+X-GNOME-Autostart-enabled=true

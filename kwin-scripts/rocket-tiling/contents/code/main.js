@@ -533,10 +533,10 @@ function toggleFullscreen() {
 function toggleMaximize() {
     var active = workspace.activeWindow;
     if (!active) return;
-    if (active.geometry.width === workspace.clientArea(KWin.FullArea, active.output, workspace.currentDesktop).width) {
+    if (active.frameGeometry.width === workspace.clientArea(KWin.FullArea, active.output, workspace.currentDesktop).width) {
         tileAll();
     } else {
-        active.geometry = workspace.clientArea(KWin.FullArea, active.output, workspace.currentDesktop);
+        active.frameGeometry = workspace.clientArea(KWin.FullArea, active.output, workspace.currentDesktop);
     }
 }
 
@@ -677,10 +677,7 @@ function onDesktopChanged(oldDesktop, newDesktop, output) {
 // ── Register Shortcuts (Omarchy-compatible) ───────────────────────────────
 
 function exec(command) {
-    callDBus("org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting",
-        "loadScript", "", "");
-    // Use system command via workspace scripting
-    print("Rocket: exec -> " + command);
+    callDBus("org.kde.krunner", "/krunner", "org.kde.krunner.run", "Run", command);
 }
 
 function registerShortcuts() {
@@ -805,45 +802,45 @@ function registerShortcuts() {
     registerShortcut("RocketRemoveWS", "Remove Workspace", "", removeWorkspace);
 
     // ── Master Adjustments ──────────────────────────────────────────────────
-    registerShortcut("RocketMasterGrow", "Rocket: Grow Master", "Meta+Ctrl+Right", function() { adjustMasterRatio(0.05); });
-    registerShortcut("RocketMasterShrink", "Rocket: Shrink Master", "Meta+Ctrl+Left", function() { adjustMasterRatio(-0.05); });
+    registerShortcut("RocketMasterGrow", "Rocket: Grow Master", "Meta+Ctrl+L", function() { adjustMasterRatio(0.05); });
+    registerShortcut("RocketMasterShrink", "Rocket: Shrink Master", "Meta+Ctrl+H", function() { adjustMasterRatio(-0.05); });
     registerShortcut("RocketMasterAdd", "Rocket: Add Master", "Meta+I", function() { adjustMasterCount(1); });
     registerShortcut("RocketMasterRemove", "Rocket: Remove Master", "Meta+D", function() { adjustMasterCount(-1); });
 
     // ── Launch Apps (Omarchy-compatible) ────────────────────────────────────
     registerShortcut("RocketTerminal", "Terminal", "Meta+Return", function() {
-        print("Rocket: Launching terminal...");
+        exec("kitty");
     });
     registerShortcut("RocketBrowser", "Browser", "Meta+Shift+Return", function() {
-        print("Rocket: Launching browser...");
+        exec("firefox");
     });
     registerShortcut("RocketFileManager", "File Manager", "Meta+Shift+F", function() {
-        print("Rocket: Launching file manager...");
+        exec("dolphin");
     });
     registerShortcut("RocketEditor", "Editor", "Meta+Shift+N", function() {
-        print("Rocket: Launching editor...");
+        exec("kate");
     });
 
     // ── System ──────────────────────────────────────────────────────────────
     registerShortcut("RocketSystemMenu", "System Menu", "Meta+Escape", function() {
-        print("Rocket: System menu...");
+        callDBus("org.kde.KWin", "/KWin", "org.kde.KWin", "showOverview");
     });
     registerShortcut("RocketShowKeybinds", "Show Keybindings", "Meta+K", function() {
-        print("Rocket: Show keybindings...");
+        exec("kitty -e 'cat ~/.config/rocket/keybinds.txt'");
     });
     registerShortcut("RocketScreenshot", "Screenshot", "Print", function() {
-        print("Rocket: Screenshot...");
+        exec("grim -g \"$(slurp)\" - | wl-copy");
     });
     registerShortcut("RocketColorPicker", "Color Picker", "Meta+Print", function() {
-        print("Rocket: Color picker...");
+        exec("hyprpicker -a");
     });
 
     // ── Notifications ───────────────────────────────────────────────────────
     registerShortcut("RocketDismissNotif", "Dismiss Notification", "Meta+Comma", function() {
-        print("Rocket: Dismiss notification...");
+        callDBus("org.freedesktop.Notifications", "/org/freedesktop/Notifications", "org.freedesktop.Notifications", "CloseNotification", 0);
     });
     registerShortcut("RocketDismissAll", "Dismiss All Notifications", "Meta+Shift+Comma", function() {
-        print("Rocket: Dismiss all...");
+        callDBus("org.freedesktop.Notifications", "/org/freedesktop/Notifications", "org.freedesktop.Notifications", "CloseNotification", 0);
     });
 }
 

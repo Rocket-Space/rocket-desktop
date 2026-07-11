@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Rocket Power
+Exec=/usr/bin/rocket-session-bin --power
+X-GNOME-Autostart-enabled=true

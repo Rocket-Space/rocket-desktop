@@ -66,12 +66,21 @@ echo "[$(date)] Rocket: Wayland display ready: $WAYLAND_DISPLAY" >> "$ROCKET_LOG
 
 # ── Load KWin tiling script ────────────────────────────────────────────────
 echo "[$(date)] Rocket: Loading KWin tiling script..." >> "$ROCKET_LOG"
-# The script is loaded automatically by KWin via [Plugins] script-rocket-tiling_enabled=true
-# Just reconfigure to ensure it picks it up
-sleep 3
+# Script auto-loads from kwinrc [Plugins] rocket-tilingEnabled=true
+# Just need to wait for KWin to be ready and reconfigure
+RETRIES=0
+while [ $RETRIES -lt 20 ]; do
+    if qdbus6 org.kde.KWin /KWin org.kde.KWin.isActive 2>/dev/null | grep -qi "true\|yes"; then
+        break
+    fi
+    sleep 0.5
+    RETRIES=$((RETRIES + 1))
+done
 qdbus6 org.kde.KWin /KWin org.kde.KWin.reconfigure 2>/dev/null || true
-sleep 1
-echo "[$(date)] Rocket: Tiling script enabled via kwinrc plugin" >> "$ROCKET_LOG"
+sleep 2
+# Verify script loaded
+SCRIPTS=$(qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.isScriptLoaded "rocket-tiling" 2>/dev/null || echo "unknown")
+echo "[$(date)] Rocket: Tiling script loaded: $SCRIPTS" >> "$ROCKET_LOG"
 
 # ── Enable KWin built-in effects ───────────────────────────────────────────
 echo "[$(date)] Rocket: Enabling effects..." >> "$ROCKET_LOG"
@@ -84,6 +93,8 @@ qdbus6 org.kde.KWin /Effects org.kde.KWin.Effects.loadEffect "blur" 2>/dev/null 
 # ── Launch shell components ────────────────────────────────────────────────
 echo "[$(date)] Rocket: Starting components..." >> "$ROCKET_LOG"
 
+# Start krunner for app launching shortcuts
+krunner --daemon 2>/dev/null &
 $ROCKET_BIN --panel >> "$ROCKET_LOG" 2>&1 &
 $ROCKET_BIN --wallpaper >> "$ROCKET_LOG" 2>&1 &
 $ROCKET_BIN --notifications >> "$ROCKET_LOG" 2>&1 &

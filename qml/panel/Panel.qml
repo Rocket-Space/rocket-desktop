@@ -23,7 +23,7 @@ Item {
     signal launcherToggled()
     signal statusClicked(string area)
 
-    width: Window.width || 800
+    width: root.Window ? root.Window.width : 800
     height: 44
     anchors.horizontalCenter: parent ? parent.horizontalCenter : undefined
     anchors.bottom: parent ? parent.bottom : undefined
@@ -179,7 +179,7 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: modelData.icon || ""
+                        text: modelData ? modelData.icon : ""
                         font.pixelSize: 14
                         color: Common.Theme.text
                         opacity: 0.8

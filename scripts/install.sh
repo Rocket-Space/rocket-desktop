@@ -100,10 +100,7 @@ if [ ! -f "$KWINRC" ]; then
 Number=1
 Rows=1
 
-[Tiling]
-padding=8
-
-[RocketTiling]
+[Script-rocket-tiling]
 layout=master
 gap=8
 masterRatio=0.55
@@ -113,10 +110,10 @@ inactiveBorderColor=#333355
 noBorder=false
 KWINCFG
 else
-    if ! grep -q "\[RocketTiling\]" "$KWINRC"; then
+    if ! grep -q "\[Script-rocket-tiling\]" "$KWINRC"; then
         cat >> "$KWINRC" << 'KWINCFG'
 
-[RocketTiling]
+[Script-rocket-tiling]
 layout=master
 gap=8
 masterRatio=0.55
@@ -126,9 +123,9 @@ inactiveBorderColor=#333355
 noBorder=false
 KWINCFG
     fi
-    # Enable the tiling script plugin
-    if ! grep -q "script-rocket-tiling_enabled" "$KWINRC"; then
-        sed -i '/\[Plugins\]/a script-rocket-tiling_enabled=true' "$KWINRC" 2>/dev/null || true
+    # Enable the tiling script plugin (format: <pluginId>Enabled=true)
+    if ! grep -q "rocket-tilingEnabled" "$KWINRC"; then
+        sed -i '/\[Plugins\]/a rocket-tilingEnabled=true' "$KWINRC" 2>/dev/null || true
     fi
 fi
 echo -e "${GREEN}[OK] KWin config updated${NC}"
