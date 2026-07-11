@@ -73,30 +73,32 @@ launch_rocket() {
 
     # ── Clean conflicting KWin shortcuts ─────────────────────────────────────
     echo "[$(date)] Rocket: Cleaning conflicting shortcuts..." >> "$ROCKET_LOG"
-    KGLOBAL="$HOME/.config/kglobalshortcutsrc"
-    if [ -f "$KGLOBAL" ]; then
-        # Collect all Rocket default keys
-        ROCKET_KEYS=$(grep "^Rocket" "$KGLOBAL" | awk -F= '{split($2,a,","); if(a[1]!="none") print a[1]}')
-        # Clear any KWin built-in user shortcut that conflicts
-        TMPFILE=$(mktemp)
-        while IFS= read -r line; do
-            if [[ "$line" == *=* ]] && [[ "$line" != Rocket* ]] && [[ "$line" != \[* ]] && [[ "$line" != _* ]]; then
-                IFS='=' read -r key val <<< "$line"
-                IFS=',' read -r def user desc <<< "$val"
-                if [ "$user" != "none" ] && [ -n "$user" ]; then
-                    for rk in $ROCKET_KEYS; do
-                        if echo "$user" | grep -qF "$rk"; then
-                            val="$def,none,$desc"
-                            line="$key=$val"
-                            break
-                        fi
-                    done
-                fi
-            fi
-            echo "$line"
-        done < "$KGLOBAL" > "$TMPFILE"
-        mv "$TMPFILE" "$KGLOBAL"
-    fi
+    python3 -c "
+import sys
+kglobal = '$HOME/.config/kglobalshortcutsrc'
+try:
+    with open(kglobal) as f:
+        lines = f.readlines()
+    result = []
+    for line in lines:
+        line = line.rstrip('\n')
+        if line.startswith('[') or line.startswith('_') or '=' not in line:
+            result.append(line)
+            continue
+        if line.startswith('Rocket'):
+            result.append(line)
+            continue
+        key, val = line.split('=', 1)
+        parts = val.split(',')
+        if len(parts) >= 2 and parts[1] != 'none' and parts[1] != '':
+            parts[1] = 'none'
+        result.append(key + '=' + ','.join(parts))
+    with open(kglobal, 'w') as f:
+        f.write('\n'.join(result) + '\n')
+    print('Shortcuts cleaned', file=sys.stderr)
+except Exception as e:
+    print(f'Cleanup error: {e}', file=sys.stderr)
+" >> "$ROCKET_LOG" 2>&1
 
     # Start KWin
     echo "[$(date)] Rocket: Starting KWin compositor..." >> "$ROCKET_LOG"

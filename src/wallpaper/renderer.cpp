@@ -59,7 +59,7 @@ WallpaperRenderer::WallpaperRenderer(QWindow* parent)
 
     if (!m_imagePath.isEmpty()) {
         if (m_qmlRoot) {
-            m_qmlRoot->setProperty("imagePath", "file://" + m_imagePath);
+            m_qmlRoot->setProperty("imagePath", m_imagePath);
             m_qmlRoot->setProperty("scalingMode", m_scalingMode);
         }
         emit wallpaperChanged(m_imagePath);
@@ -93,7 +93,7 @@ void WallpaperRenderer::setImage(const QString& path) {
 
     saveConfig();
     if (m_qmlRoot) {
-        m_qmlRoot->setProperty("imagePath", "file://" + m_imagePath);
+        m_qmlRoot->setProperty("imagePath", m_imagePath);
     }
     emit wallpaperChanged(m_imagePath);
 }
