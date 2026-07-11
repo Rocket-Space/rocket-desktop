@@ -73,7 +73,7 @@ launch_rocket() {
 
     # Start KWin
     echo "[$(date)] Rocket: Starting KWin compositor..." >> "$ROCKET_LOG"
-    kwin_wayland --no-lockscreen --no-global-shortcuts --locale1 --xwayland &
+    kwin_wayland --no-lockscreen --locale1 --xwayland &
     KWIN_PID=$!
     echo "$KWIN_PID" > "$ROCKET_PID_FILE"
 
