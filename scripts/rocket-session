@@ -155,6 +155,7 @@ except Exception as e:
 
     # Launch components
     echo "[$(date)] Rocket: Starting components..." >> "$ROCKET_LOG"
+    /usr/lib/kglobalacceld >> "$ROCKET_LOG" 2>&1 &
     rocket-launcher &
     sleep 1
     krunner --daemon 2>/dev/null &
