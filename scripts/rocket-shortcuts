@@ -1,0 +1,427 @@
+#!/usr/bin/env python3
+import os
+import sys
+import struct
+import subprocess
+import time
+import select
+
+INPUT_EVENT_SIZE = 24
+EV_KEY = 1
+KEY_PRESS = 1
+
+MOD_META = 1
+MOD_SHIFT = 2
+MOD_CTRL = 4
+MOD_ALT = 8
+
+MODIFIER_CODES = {
+    125: MOD_META,
+    126: MOD_META,
+    42: MOD_SHIFT,
+    54: MOD_SHIFT,
+    29: MOD_CTRL,
+    97: MOD_CTRL,
+    56: MOD_ALT,
+    100: MOD_ALT,
+}
+
+K = {
+    'a': 30, 'b': 48, 'c': 46, 'd': 32, 'e': 18,
+    'f': 33, 'g': 34, 'h': 35, 'i': 23, 'j': 36,
+    'k': 37, 'l': 38, 'm': 50, 'n': 49, 'o': 24,
+    'p': 25, 'q': 16, 'r': 19, 's': 31, 't': 20,
+    'u': 22, 'v': 47, 'w': 30, 'x': 45, 'y': 21, 'z': 44,
+    '1': 2, '2': 3, '3': 4, '4': 5, '5': 6,
+    '6': 7, '7': 8, '8': 9, '9': 10, '0': 11,
+    'Return': 28, 'space': 57, 'Tab': 15,
+    'BackSpace': 14, 'Delete': 111, 'Escape': 1,
+    'F1': 59, 'F2': 60, 'F3': 61, 'F4': 62, 'F5': 63,
+    'F6': 64, 'F7': 65, 'F8': 66, 'F9': 67, 'F10': 68,
+    'F11': 87, 'F12': 88,
+    'Up': 103, 'Down': 108, 'Left': 105, 'Right': 106,
+    'comma': 51, 'period': 52, 'Print': 99,
+}
+
+KWIN_SCRIPT_PATH = os.path.expanduser(
+    "~/.local/share/kwin/scripts/rocket-tiling/contents/code/main.js"
+)
+KWIN_CONFIG = os.path.expanduser("~/.config/kwinrc")
+LOG_FILE = os.path.expanduser("~/.rocket-shortcuts.log")
+
+def log(msg):
+    try:
+        with open(LOG_FILE, "a") as f:
+            f.write(f"[{time.strftime('%H:%M:%S')}] {msg}\n")
+    except Exception:
+        pass
+
+def run(cmd):
+    try:
+        subprocess.Popen(
+            cmd, shell=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception as e:
+        log(f"exec error: {e}")
+
+def qdbus6(*args):
+    cmd = ["qdbus6"] + list(args)
+    try:
+        subprocess.Popen(
+            cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        pass
+
+def modify_kwinrc(section, key, value):
+    try:
+        lines = []
+        if os.path.exists(KWIN_CONFIG):
+            with open(KWIN_CONFIG) as f:
+                lines = f.readlines()
+
+        in_section = False
+        new_lines = []
+        found = False
+        for line in lines:
+            stripped = line.strip()
+            if stripped == f"[{section}]":
+                in_section = True
+                new_lines.append(line)
+                continue
+            if stripped.startswith("[") and stripped.endswith("]"):
+                in_section = False
+                new_lines.append(line)
+                continue
+            if in_section and stripped.startswith(f"{key}="):
+                new_lines.append(f"{key}={value}\n")
+                found = True
+                continue
+            new_lines.append(line)
+
+        if not found:
+            new_lines.append(f"\n[{section}]\n{key}={value}\n")
+
+        with open(KWIN_CONFIG, "w") as f:
+            f.writelines(new_lines)
+    except Exception as e:
+        log(f"modify_kwinrc error: {e}")
+
+def reload_tiling_script():
+    qdbus6("org.kde.KWin", "/Scripting",
+           "org.kde.kwin.Scripting.unloadScript", "rocket-tiling")
+    time.sleep(0.03)
+    qdbus6("org.kde.KWin", "/Scripting",
+           "org.kde.kwin.Scripting.loadScript",
+           KWIN_SCRIPT_PATH, "rocket-tiling")
+    time.sleep(0.03)
+    qdbus6("org.kde.KWin", "/Scripting",
+           "org.kde.kwin.Scripting.start")
+
+def set_and_reload(action):
+    modify_kwinrc("RocketTiling", "pendingAction", action)
+    reload_tiling_script()
+
+def do_close():
+    qdbus6("org.kde.KWin", "/KWin", "org.kde.KWin.killWindow")
+
+def do_toggle_float():
+    set_and_reload("toggle_float")
+
+def do_cycle_layout():
+    current = "master"
+    try:
+        with open(KWIN_CONFIG) as f:
+            in_rocket = False
+            for line in f:
+                s = line.strip()
+                if s == "[RocketTiling]":
+                    in_rocket = True
+                    continue
+                if s.startswith("[") and s.endswith("]"):
+                    in_rocket = False
+                    continue
+                if in_rocket and s.startswith("layout="):
+                    current = s.split("=", 1)[1]
+                    break
+    except Exception:
+        pass
+
+    layouts = ["master", "dwindle", "columns", "monocle"]
+    try:
+        idx = layouts.index(current)
+        next_layout = layouts[(idx + 1) % len(layouts)]
+    except ValueError:
+        next_layout = "master"
+
+    modify_kwinrc("RocketTiling", "layout", next_layout)
+    reload_tiling_script()
+
+def do_ws(num):
+    qdbus6("org.kde.KWin", "/KWin", "org.kde.KWin.setCurrentDesktop", num)
+
+def do_next_ws():
+    qdbus6("org.kde.KWin", "/KWin", "org.kde.KWin.nextDesktop")
+
+def do_prev_ws():
+    qdbus6("org.kde.KWin", "/KWin", "org.kde.KWin.previousDesktop")
+
+def do_focus(direction):
+    set_and_reload(f"focus:{direction}")
+
+def do_swap(direction):
+    set_and_reload(f"swap:{direction}")
+
+def do_move(direction):
+    set_and_reload(f"move:{direction}")
+
+def adjust_master_ratio(delta):
+    current = 0.55
+    try:
+        with open(KWIN_CONFIG) as f:
+            in_rocket = False
+            for line in f:
+                s = line.strip()
+                if s == "[RocketTiling]":
+                    in_rocket = True
+                    continue
+                if s.startswith("[") and s.endswith("]"):
+                    in_rocket = False
+                    continue
+                if in_rocket and s.startswith("masterRatio="):
+                    current = float(s.split("=", 1)[1])
+                    break
+    except Exception:
+        pass
+    new_val = max(0.1, min(0.9, current + delta))
+    modify_kwinrc("RocketTiling", "masterRatio", f"{new_val:.2f}")
+    reload_tiling_script()
+
+def adjust_master_count(delta):
+    current = 1
+    try:
+        with open(KWIN_CONFIG) as f:
+            in_rocket = False
+            for line in f:
+                s = line.strip()
+                if s == "[RocketTiling]":
+                    in_rocket = True
+                    continue
+                if s.startswith("[") and s.endswith("]"):
+                    in_rocket = False
+                    continue
+                if in_rocket and s.startswith("masterCount="):
+                    current = int(s.split("=", 1)[1])
+                    break
+    except Exception:
+        pass
+    new_val = max(1, current + delta)
+    modify_kwinrc("RocketTiling", "masterCount", str(new_val))
+    reload_tiling_script()
+
+def do_show_keybinds():
+    run("kitty -e 'cat ~/.config/rocket/keybinds.txt 2>/dev/null || echo No keybinds file'")
+
+def do_launcher():
+    run("rofi -show drun -show-icons")
+
+def do_screenshot():
+    run("grim -g \"$(slurp)\" - | wl-copy")
+
+ACTIONS = {
+    'close': do_close,
+    'toggle_float': do_toggle_float,
+    'cycle_layout': do_cycle_layout,
+    'focus_left': lambda: do_focus("left"),
+    'focus_right': lambda: do_focus("right"),
+    'focus_up': lambda: do_focus("up"),
+    'focus_down': lambda: do_focus("down"),
+    'focus_next': lambda: do_focus("next"),
+    'focus_prev': lambda: do_focus("prev"),
+    'swap_left': lambda: do_swap("left"),
+    'swap_right': lambda: do_swap("right"),
+    'swap_up': lambda: do_swap("up"),
+    'swap_down': lambda: do_swap("down"),
+    'move_left': lambda: do_move("left"),
+    'move_right': lambda: do_move("right"),
+    'move_up': lambda: do_move("up"),
+    'move_down': lambda: do_move("down"),
+    'ws_1': lambda: do_ws(1),
+    'ws_2': lambda: do_ws(2),
+    'ws_3': lambda: do_ws(3),
+    'ws_4': lambda: do_ws(4),
+    'ws_5': lambda: do_ws(5),
+    'next_ws': do_next_ws,
+    'prev_ws': do_prev_ws,
+    'master_grow': lambda: adjust_master_ratio(0.05),
+    'master_shrink': lambda: adjust_master_ratio(-0.05),
+    'master_add': lambda: adjust_master_count(1),
+    'master_remove': lambda: adjust_master_count(-1),
+    'terminal': lambda: run("kitty"),
+    'browser': lambda: run("firefox"),
+    'file_manager': lambda: run("dolphin"),
+    'editor': lambda: run("kate"),
+    'launcher': do_launcher,
+    'settings': lambda: run("rocket-settings"),
+    'show_keybinds': do_show_keybinds,
+    'screenshot': do_screenshot,
+}
+
+M = MOD_META
+S = MOD_SHIFT
+C = MOD_CTRL
+
+SHORTCUTS = {
+    (M, K['w']): 'close',
+    (M, K['space']): 'cycle_layout',
+    (M | S, K['v']): 'toggle_float',
+
+    (M, K['Left']): 'focus_left',
+    (M, K['Right']): 'focus_right',
+    (M, K['Up']): 'focus_up',
+    (M, K['Down']): 'focus_down',
+    (M, K['j']): 'focus_next',
+    (M, K['k']): 'focus_prev',
+
+    (M | S, K['Left']): 'swap_left',
+    (M | S, K['Right']): 'swap_right',
+    (M | S, K['Up']): 'swap_up',
+    (M | S, K['Down']): 'swap_down',
+
+    (M | C, K['Left']): 'move_left',
+    (M | C, K['Right']): 'move_right',
+    (M | C, K['Up']): 'move_up',
+    (M | C, K['Down']): 'move_down',
+
+    (M, K['1']): 'ws_1',
+    (M, K['2']): 'ws_2',
+    (M, K['3']): 'ws_3',
+    (M, K['4']): 'ws_4',
+    (M, K['5']): 'ws_5',
+    (M, K['Tab']): 'next_ws',
+    (M | S, K['Tab']): 'prev_ws',
+
+    (M | C, K['l']): 'master_grow',
+    (M | C, K['h']): 'master_shrink',
+    (M, K['i']): 'master_add',
+    (M, K['d']): 'master_remove',
+
+    (M, K['Return']): 'terminal',
+    (M | S, K['Return']): 'browser',
+    (M | S, K['f']): 'file_manager',
+    (M | S, K['n']): 'editor',
+    (M, K['Escape']): 'launcher',
+    (M, K['comma']): 'show_keybinds',
+    (M, K['Print']): 'screenshot',
+}
+
+class KeyboardHandler:
+    def __init__(self):
+        self.modifiers = 0
+        self.devices = []
+        self.last_action_time = {}
+        self.cooldown = 0.2
+
+    def find_keyboards(self):
+        for entry in os.listdir("/sys/class/input"):
+            if not entry.startswith("event"):
+                continue
+            try:
+                name_path = f"/sys/class/input/{entry}/device/name"
+                caps_path = f"/sys/class/input/{entry}/device/capabilities/ev"
+                with open(name_path) as f:
+                    name = f.read().strip()
+                with open(caps_path) as f:
+                    caps = int(f.read().strip(), 16)
+                if caps & (1 << 1):
+                    dev = f"/dev/input/{entry}"
+                    self.devices.append((dev, name))
+                    log(f"Found keyboard: {dev} ({name})")
+            except (PermissionError, FileNotFoundError, ValueError):
+                continue
+
+        if not self.devices:
+            self.devices.append(("/dev/input/event3", "AT Translated Set 2 keyboard"))
+            log("Fallback keyboard: /dev/input/event3")
+
+    def run(self):
+        self.find_keyboards()
+        if not self.devices:
+            log("No keyboards found!")
+            sys.exit(1)
+
+        fds = {}
+        for dev, name in self.devices:
+            try:
+                fd = os.open(dev, os.O_RDONLY | os.O_NONBLOCK)
+                fds[fd] = dev
+                log(f"Opened {dev}")
+            except PermissionError:
+                log(f"Permission denied: {dev}")
+
+        if not fds:
+            log("Could not open any keyboard!")
+            sys.exit(1)
+
+        log(f"Listening on {len(fds)} keyboard(s), {len(SHORTCUTS)} shortcuts")
+
+        while True:
+            try:
+                readable, _, _ = select.select(fds.keys(), [], [], 0.5)
+                for fd in readable:
+                    try:
+                        data = os.read(fd, INPUT_EVENT_SIZE * 16)
+                    except OSError:
+                        continue
+
+                    offset = 0
+                    while offset + INPUT_EVENT_SIZE <= len(data):
+                        _, _, ev_type, ev_code, ev_value = struct.unpack(
+                            "llHHi", data[offset:offset + INPUT_EVENT_SIZE]
+                        )
+                        offset += INPUT_EVENT_SIZE
+                        if ev_type == EV_KEY:
+                            self.handle_key(ev_code, ev_value)
+
+            except KeyboardInterrupt:
+                log("Shutting down")
+                break
+            except Exception as e:
+                log(f"Error: {e}")
+                time.sleep(0.1)
+
+    def handle_key(self, code, value):
+        if code in MODIFIER_CODES:
+            if value == KEY_PRESS:
+                self.modifiers |= MODIFIER_CODES[code]
+            else:
+                self.modifiers &= ~MODIFIER_CODES[code]
+            return
+
+        if value != KEY_PRESS:
+            return
+
+        key_combo = (self.modifiers, code)
+        action = SHORTCUTS.get(key_combo)
+        if not action:
+            return
+
+        now = time.time()
+        last = self.last_action_time.get(key_combo, 0)
+        if now - last < self.cooldown:
+            return
+        self.last_action_time[key_combo] = now
+
+        log(f"Shortcut: mod={self.modifiers} code={code} -> {action}")
+        handler = ACTIONS.get(action)
+        if handler:
+            try:
+                handler()
+            except Exception as e:
+                log(f"Action error ({action}): {e}")
+
+if __name__ == "__main__":
+    handler = KeyboardHandler()
+    handler.run()

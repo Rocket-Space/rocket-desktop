@@ -846,9 +846,49 @@ function registerShortcuts() {
 
 // ── Initialization ─────────────────────────────────────────────────────────
 
+function handlePendingAction() {
+    var action = readConfig("pendingAction", "");
+    if (!action) return;
+
+    print("Rocket: Executing pending action: " + action);
+
+    if (action === "toggle_float") {
+        toggleFloat();
+    } else if (action.indexOf("focus:") === 0) {
+        var dir = action.split(":")[1];
+        if (dir === "next") {
+            var wl = workspace.windowList();
+            if (wl.length > 1) {
+                var cur = workspace.activeWindow;
+                var idx = wl.indexOf(cur);
+                workspace.activeWindow = wl[(idx + 1) % wl.length];
+            }
+        } else if (dir === "prev") {
+            var wl = workspace.windowList();
+            if (wl.length > 1) {
+                var cur = workspace.activeWindow;
+                var idx = wl.indexOf(cur);
+                workspace.activeWindow = wl[(idx - 1 + wl.length) % wl.length];
+            }
+        } else {
+            focusWindow(dir);
+        }
+    } else if (action.indexOf("swap:") === 0) {
+        swapWindows(action.split(":")[1]);
+    } else if (action.indexOf("move:") === 0) {
+        moveWindowToDirection(action.split(":")[1]);
+    }
+
+    // Clear the pending action so it doesn't re-trigger
+    callDBus("org.Rocket.Launcher", "/org/rocket/launcher", "org.Rocket.Launcher", "Exec", "sed -i 's/^pendingAction=.*/pendingAction=/' ~/.config/kwinrc");
+}
+
 function init() {
     print("Rocket: ==========================================");
     print("Rocket: Tiling engine v1.0.0 initializing...");
+
+    handlePendingAction();
+
     print("Rocket: Layout: " + config.layout);
     print("Rocket: Gap: " + config.gap);
     print("Rocket: Screens: " + workspace.screens.length);
@@ -858,14 +898,12 @@ function init() {
     registerShortcuts();
     print("Rocket: Shortcuts registered");
 
-    // Connect signals
     workspace.windowAdded.connect(onWindowAdded);
     workspace.windowRemoved.connect(onWindowRemoved);
     workspace.windowActivated.connect(onWindowActivated);
     workspace.currentDesktopChanged.connect(onDesktopChanged);
     print("Rocket: Signals connected");
 
-    // Initial tile
     tileAll();
     print("Rocket: Initial tile done");
 
