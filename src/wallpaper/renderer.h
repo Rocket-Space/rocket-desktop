@@ -49,4 +49,5 @@ private:
     WallpaperRendererAdaptor* m_adaptor;
     QQmlEngine* m_engine = nullptr;
     QQmlComponent* m_component = nullptr;
+    QQuickItem* m_qmlRoot = nullptr;
 };

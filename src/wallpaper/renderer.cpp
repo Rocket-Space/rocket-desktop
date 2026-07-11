@@ -47,6 +47,7 @@ WallpaperRenderer::WallpaperRenderer(QWindow* parent)
         QQuickItem* root = qobject_cast<QQuickItem*>(m_component->create());
         if (root) {
             root->setParentItem(contentItem());
+            m_qmlRoot = root;
         }
     }
 
@@ -55,6 +56,15 @@ WallpaperRenderer::WallpaperRenderer(QWindow* parent)
     QDBusConnection bus = QDBusConnection::sessionBus();
     bus.registerService("org.rocket.Wallpaper");
     bus.registerObject("/org/rocket/Wallpaper", this);
+
+    if (!m_imagePath.isEmpty()) {
+        if (m_qmlRoot) {
+            m_qmlRoot->setProperty("imagePath", "file://" + m_imagePath);
+            m_qmlRoot->setProperty("scalingMode", m_scalingMode);
+        }
+        emit wallpaperChanged(m_imagePath);
+        emit scalingModeChanged(m_scalingMode);
+    }
 }
 
 WallpaperRenderer::~WallpaperRenderer() {
@@ -82,6 +92,9 @@ void WallpaperRenderer::setImage(const QString& path) {
     }
 
     saveConfig();
+    if (m_qmlRoot) {
+        m_qmlRoot->setProperty("imagePath", "file://" + m_imagePath);
+    }
     emit wallpaperChanged(m_imagePath);
 }
 
@@ -92,6 +105,9 @@ void WallpaperRenderer::setScalingMode(const QString& mode) {
 
     m_scalingMode = mode;
     saveConfig();
+    if (m_qmlRoot) {
+        m_qmlRoot->setProperty("scalingMode", m_scalingMode);
+    }
     emit scalingModeChanged(m_scalingMode);
 }
 
