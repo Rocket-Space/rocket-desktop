@@ -69,12 +69,19 @@ echo "[$(date)] Rocket: Loading KWin tiling script..." >> "$ROCKET_LOG"
 TILING_SCRIPT="$HOME/.local/share/kwin/scripts/rocket-tiling/contents/code/main.js"
 if [ -f "$TILING_SCRIPT" ]; then
     sleep 2
-    SCRIPT_ID=$(qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.loadScript "$TILING_SCRIPT" "rocket-tiling" 2>/dev/null || echo "-1")
-    if [ "$SCRIPT_ID" != "-1" ] && [ -n "$SCRIPT_ID" ]; then
+    SCRIPT_ID=$(qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.loadDeclarativeScript "$TILING_SCRIPT" "rocket-tiling" 2>/dev/null || echo "")
+    if [ -n "$SCRIPT_ID" ] && [ "$SCRIPT_ID" != "" ]; then
         qdbus6 org.kde.KWin /Scripting/Script${SCRIPT_ID} org.kde.kwin.Script.run 2>/dev/null || true
         echo "[$(date)] Rocket: Tiling script loaded (ID: $SCRIPT_ID)" >> "$ROCKET_LOG"
     else
-        echo "[$(date)] Rocket: WARNING - Could not load tiling script" >> "$ROCKET_LOG"
+        # Fallback: try loadScript
+        SCRIPT_ID=$(qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.loadScript "$TILING_SCRIPT" "rocket-tiling" 2>/dev/null || echo "")
+        if [ -n "$SCRIPT_ID" ] && [ "$SCRIPT_ID" != "" ]; then
+            qdbus6 org.kde.KWin /Scripting/Script${SCRIPT_ID} org.kde.kwin.Script.run 2>/dev/null || true
+            echo "[$(date)] Rocket: Tiling script loaded via fallback (ID: $SCRIPT_ID)" >> "$ROCKET_LOG"
+        else
+            echo "[$(date)] Rocket: WARNING - Could not load tiling script" >> "$ROCKET_LOG"
+        fi
     fi
 else
     echo "[$(date)] Rocket: WARNING - Tiling script not found at $TILING_SCRIPT" >> "$ROCKET_LOG"

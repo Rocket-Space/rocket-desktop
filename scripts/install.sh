@@ -126,6 +126,10 @@ inactiveBorderColor=#333355
 noBorder=false
 KWINCFG
     fi
+    # Enable the tiling script plugin
+    if ! grep -q "rocket-tiling_enabled" "$KWINRC"; then
+        sed -i '/\[Plugins\]/a rocket-tiling_enabled=true' "$KWINRC" 2>/dev/null || true
+    fi
 fi
 echo -e "${GREEN}[OK] KWin config updated${NC}"
 
