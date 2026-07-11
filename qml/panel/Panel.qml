@@ -219,16 +219,16 @@ Item {
                         cursorShape: Qt.PointingHandCursor
                         onEntered: parent.children[0].opacity = 1.0
                         onExited: parent.children[0].opacity = 0.8
-                        onClicked: root.statusClicked(modelData.id || "")
+                        onClicked: root.statusClicked(modelData.itemId || "")
                     }
                 }
             }
 
             ListModel {
                 id: defaultTray
-                ListElement { icon: "\u26A1"; id: "battery" }
-                ListElement { icon: "\u2756"; id: "network" }
-                ListElement { icon: "\u266B"; id: "volume" }
+                ListElement { icon: "\u26A1"; itemId: "battery" }
+                ListElement { icon: "\u2756"; itemId: "network" }
+                ListElement { icon: "\u266B"; itemId: "volume" }
             }
         }
 
