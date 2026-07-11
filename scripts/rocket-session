@@ -100,6 +100,13 @@ except Exception as e:
     print(f'Cleanup error: {e}', file=sys.stderr)
 " >> "$ROCKET_LOG" 2>&1
 
+    # Disable KWin built-in effects that intercept shortcuts
+    KWINRC="$HOME/.config/kwinrc"
+    if ! grep -q "\[Effect-overview\]" "$KWINRC" 2>/dev/null; then
+        printf "\n[Effect-overview]\nEnable=false\n" >> "$KWINRC"
+    fi
+    sed -i '/\[Effect-overview\]/,/^\[/{s/Enable=true/Enable=false/}' "$KWINRC" 2>/dev/null
+
     # Start KWin
     echo "[$(date)] Rocket: Starting KWin compositor..." >> "$ROCKET_LOG"
     kwin_wayland --no-lockscreen --locale1 --xwayland &
