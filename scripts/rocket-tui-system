@@ -1,0 +1,62 @@
+#!/bin/bash
+# rocket-tui-system - System monitor TUI wrapper
+
+show_system_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       System Monitor              ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m htop"
+    echo -e "  \033[0;32m2)\033[0m btop"
+    echo -e "  \033[0;32m3)\033[0m top"
+    echo -e "  \033[0;32m4)\033[0m glances"
+    echo -e "  \033[0;32m5)\033[0m df -h (Disk Usage)"
+    echo -e "  \033[0;32m6)\033[0m free -h (Memory)"
+    echo -e "  \033[0;32m7)\033[0m vmstat 1 (Virtual Memory)"
+    echo -e "  \033[0;32m8)\033[0m iostat (I/O)"
+    echo -e "  \033[0;32m9)\033[0m lscpu (CPU Info)"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-9]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) htop ;;
+        2) btop 2>/dev/null || htop ;;
+        3) top ;;
+        4) glances 2>/dev/null || echo "glances not installed" ;;
+        5)
+            echo "Disk usage:"
+            df -h
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_system_menu
+            ;;
+        6)
+            echo "Memory usage:"
+            free -h
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_system_menu
+            ;;
+        7) vmstat 1 ;;
+        8) iostat -x 1 2>/dev/null || echo "iostat not available" ;;
+        9)
+            echo "CPU information:"
+            lscpu
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_system_menu
+            ;;
+        0) return ;;
+        *) show_system_menu ;;
+    esac
+}
+
+show_system_menu

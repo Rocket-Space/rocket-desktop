@@ -1,0 +1,75 @@
+#!/bin/bash
+# rocket-tui-wifi - WiFi control TUI wrapper
+
+show_wifi_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║         WiFi Settings             ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m nmtui (Network Manager)"
+    echo -e "  \033[0;32m2)\033[0m iwctl (iwd)"
+    echo -e "  \033[0;32m3)\033[0m nmcli device wifi list"
+    echo -e "  \033[0;32m4)\033[0m nmcli connection show"
+    echo -e "  \033[0;32m5)\033[0m nmcli radio wifi status"
+    echo -e "  \033[0;32m6)\033[0m WiFi Scan"
+    echo -e "  \033[0;32m7)\033[0m Network Status"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-7]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) nmtui ;;
+        2) iwctl ;;
+        3)
+            echo "Available WiFi networks:"
+            nmcli device wifi list
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_wifi_menu
+            ;;
+        4)
+            echo "Active connections:"
+            nmcli connection show --active
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_wifi_menu
+            ;;
+        5)
+            echo "WiFi status:"
+            nmcli radio wifi
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_wifi_menu
+            ;;
+        6)
+            echo "Scanning for WiFi networks..."
+            nmcli device wifi rescan
+            nmcli device wifi list
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_wifi_menu
+            ;;
+        7)
+            echo "Network status:"
+            nmcli general status
+            echo ""
+            nmcli device status
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_wifi_menu
+            ;;
+        0) return ;;
+        *) show_wifi_menu ;;
+    esac
+}
+
+show_wifi_menu

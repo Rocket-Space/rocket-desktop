@@ -7,11 +7,25 @@ export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 export XDG_CURRENT_DESKTOP=Rocket
 export XDG_SESSION_TYPE=wayland
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
-export ROCKET_VERSION=1.0.0
+export ROCKET_VERSION=1.1.0
+
+# Qt theme
+export QT_QPA_PLATFORMTHEME=qt6ct
+export QT_STYLE_OVERRIDE=kvantum
+
+# XDG directories
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 
 ROCKET_BIN="/usr/bin/rocket-session-bin"
 ROCKET_LOG="$HOME/.rocket-session.log"
 ROCKET_PID_FILE="/tmp/rocket-session.pid"
+
+# ── Logging ─────────────────────────────────────────────────────────────────
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$ROCKET_LOG"
+}
 
 # ── Menu (only from TTY, no display server) ────────────────────────────────
 show_menu() {
@@ -58,21 +72,21 @@ show_menu() {
 # ── Launch Rocket Desktop ──────────────────────────────────────────────────
 launch_rocket() {
     cleanup() {
-        echo "[$(date)] Rocket: Shutting down..." >> "$ROCKET_LOG"
+        log "Shutting down..."
         [ -f "$ROCKET_PID_FILE" ] && kill "$(cat "$ROCKET_PID_FILE")" 2>/dev/null && rm -f "$ROCKET_PID_FILE"
         kill $(jobs -p) 2>/dev/null; wait 2>/dev/null
     }
     trap cleanup EXIT INT TERM
 
-    echo "[$(date)] Rocket: Starting session..." > "$ROCKET_LOG"
+    log "Starting Rocket Desktop session..."
 
     if [ ! -x "$ROCKET_BIN" ]; then
-        echo "Rocket: Binary not found at $ROCKET_BIN" >> "$ROCKET_LOG"
+        log "ERROR: Binary not found at $ROCKET_BIN"
         exit 1
     fi
 
     # ── Clean conflicting KWin shortcuts ─────────────────────────────────────
-    echo "[$(date)] Rocket: Cleaning conflicting shortcuts..." >> "$ROCKET_LOG"
+    log "Cleaning conflicting shortcuts..."
     python3 -c "
 import sys
 kglobal = '$HOME/.config/kglobalshortcutsrc'
@@ -108,13 +122,13 @@ except Exception as e:
     sed -i '/\[Effect-overview\]/,/^\[/{s/Enable=true/Enable=false/}' "$KWINRC" 2>/dev/null
 
     # Start KWin
-    echo "[$(date)] Rocket: Starting KWin compositor..." >> "$ROCKET_LOG"
+    log "Starting KWin compositor..."
     kwin_wayland --no-lockscreen --locale1 --xwayland &
     KWIN_PID=$!
     echo "$KWIN_PID" > "$ROCKET_PID_FILE"
 
     # Wait for Wayland display
-    echo "[$(date)] Rocket: Waiting for Wayland display..." >> "$ROCKET_LOG"
+    log "Waiting for Wayland display..."
     for i in $(seq 1 30); do
         if [ -e "$XDG_RUNTIME_DIR/wayland-0" ]; then
             export WAYLAND_DISPLAY="wayland-0"
@@ -124,14 +138,14 @@ except Exception as e:
     done
 
     if [ -z "$WAYLAND_DISPLAY" ]; then
-        echo "[$(date)] Rocket: ERROR - Wayland display not ready" >> "$ROCKET_LOG"
+        log "ERROR: Wayland display not ready"
         exit 1
     fi
 
-    echo "[$(date)] Rocket: Wayland display ready: $WAYLAND_DISPLAY" >> "$ROCKET_LOG"
+    log "Wayland display ready: $WAYLAND_DISPLAY"
 
     # Load KWin tiling script
-    echo "[$(date)] Rocket: Loading KWin tiling script..." >> "$ROCKET_LOG"
+    log "Loading KWin tiling script..."
     RETRIES=0
     while [ $RETRIES -lt 20 ]; do
         if qdbus6 org.kde.KWin /KWin org.kde.KWin.isActive 2>/dev/null | grep -qi "true\|yes"; then
@@ -143,10 +157,10 @@ except Exception as e:
     qdbus6 org.kde.KWin /KWin org.kde.KWin.reconfigure 2>/dev/null || true
     sleep 2
     SCRIPTS=$(qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.isScriptLoaded "rocket-tiling" 2>/dev/null || echo "unknown")
-    echo "[$(date)] Rocket: Tiling script loaded: $SCRIPTS" >> "$ROCKET_LOG"
+    log "Tiling script loaded: $SCRIPTS"
 
     # Enable effects
-    echo "[$(date)] Rocket: Enabling effects..." >> "$ROCKET_LOG"
+    log "Enabling effects..."
     sleep 0.5
     qdbus6 org.kde.KWin /Effects org.kde.KWin.Effects.loadEffect "fade" 2>/dev/null || true
     qdbus6 org.kde.KWin /Effects org.kde.KWin.Effects.loadEffect "glide" 2>/dev/null || true
@@ -154,7 +168,7 @@ except Exception as e:
     qdbus6 org.kde.KWin /Effects org.kde.KWin.Effects.loadEffect "blur" 2>/dev/null || true
 
     # Launch components
-    echo "[$(date)] Rocket: Starting components..." >> "$ROCKET_LOG"
+    log "Starting components..."
     /usr/lib/kglobalacceld >> "$ROCKET_LOG" 2>&1 &
     rocket-launcher &
     sleep 1
@@ -165,9 +179,9 @@ except Exception as e:
     $ROCKET_BIN --power >> "$ROCKET_LOG" 2>&1 &
     rocket-shortcuts >> "$ROCKET_LOG" 2>&1 &
 
-    echo "[$(date)] Rocket: All components launched" >> "$ROCKET_LOG"
+    log "All components launched"
     wait $KWIN_PID
-    echo "[$(date)] Rocket: KWin exited" >> "$ROCKET_LOG"
+    log "KWin exited"
 }
 
 # ── Entry point ────────────────────────────────────────────────────────────

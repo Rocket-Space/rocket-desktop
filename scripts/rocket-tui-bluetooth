@@ -1,0 +1,75 @@
+#!/bin/bash
+# rocket-tui-bluetooth - Bluetooth control TUI wrapper
+
+show_bluetooth_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Bluetooth Settings          ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Bluetooth Manager (blueman)"
+    echo -e "  \033[0;32m2)\033[0m bluetoothctl interactive"
+    echo -e "  \033[0;32m3)\033[0m Show paired devices"
+    echo -e "  \033[0;32m4)\033[0m Scan for devices"
+    echo -e "  \033[0;32m5)\033[0m Power on"
+    echo -e "  \033[0;32m6)\033[0m Power off"
+    echo -e "  \033[0;32m7)\033[0m Show status"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-7]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) blueman-manager 2>/dev/null || echo "blueman not installed" ;;
+        2) bluetoothctl ;;
+        3)
+            echo "Paired devices:"
+            bluetoothctl paired-devices
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_bluetooth_menu
+            ;;
+        4)
+            echo "Scanning for devices (5 seconds)..."
+            bluetoothctl scan on
+            sleep 5
+            bluetoothctl scan off
+            bluetoothctl devices
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_bluetooth_menu
+            ;;
+        5)
+            echo "Powering on Bluetooth..."
+            bluetoothctl power on
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_bluetooth_menu
+            ;;
+        6)
+            echo "Powering off Bluetooth..."
+            bluetoothctl power off
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_bluetooth_menu
+            ;;
+        7)
+            echo "Bluetooth status:"
+            bluetoothctl show
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_bluetooth_menu
+            ;;
+        0) return ;;
+        *) show_bluetooth_menu ;;
+    esac
+}
+
+show_bluetooth_menu

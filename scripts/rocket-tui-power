@@ -1,0 +1,79 @@
+#!/bin/bash
+# rocket-tui-power - Power management TUI wrapper
+
+show_power_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Power Management            ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Power Profile (current: $(powerprofilesctl get 2>/dev/null || echo 'unknown'))"
+    echo -e "  \033[0;32m2)\033[0m Set Balanced"
+    echo -e "  \033[0;32m3)\033[0m Set Performance"
+    echo -e "  \033[0;32m4)\033[0m Set Power Saver"
+    echo -e "  \033[0;32m5)\033[0m Battery Status"
+    echo -e "  \033[0;32m6)\033[0m Suspend"
+    echo -e "  \033[0;32m7)\033[0m Hibernate"
+    echo -e "  \033[0;32m8)\033[0m Reboot"
+    echo -e "  \033[0;32m9)\033[0m Shutdown"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-9]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1)
+            echo "Power profiles:"
+            powerprofilesctl list 2>/dev/null || echo "powerprofilesctl not available"
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_power_menu
+            ;;
+        2)
+            echo "Setting Balanced profile..."
+            powerprofilesctl set balanced 2>/dev/null || echo "Failed"
+            show_power_menu
+            ;;
+        3)
+            echo "Setting Performance profile..."
+            powerprofilesctl set performance 2>/dev/null || echo "Failed"
+            show_power_menu
+            ;;
+        4)
+            echo "Setting Power Saver profile..."
+            powerprofilesctl set power-saver 2>/dev/null || echo "Failed"
+            show_power_menu
+            ;;
+        5)
+            echo "Battery status:"
+            upower -i /org/freedesktop/UPower/devices/battery_BAT0 2>/dev/null || echo "No battery found"
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_power_menu
+            ;;
+        6)
+            echo "Susending system..."
+            systemctl suspend
+            ;;
+        7)
+            echo "Hibernating system..."
+            systemctl hibernate
+            ;;
+        8)
+            echo "Rebooting system..."
+            systemctl reboot
+            ;;
+        9)
+            echo "Shutting down..."
+            shutdown now
+            ;;
+        0) return ;;
+        *) show_power_menu ;;
+    esac
+}
+
+show_power_menu

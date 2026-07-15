@@ -50,19 +50,25 @@ sudo cp "$PROJECT_DIR/scripts/rocket-session" /usr/bin/rocket-session
 sudo chmod +x /usr/bin/rocket-session
 echo -e "${GREEN}[OK] Session script installed${NC}"
 
-# 6. Install rocketctl
+# 6. Install TUI scripts
+echo -e "${CYAN}[*] Installing TUI scripts...${NC}"
+sudo cp "$PROJECT_DIR/scripts/rocket-tui-"* /usr/bin/ 2>/dev/null || true
+sudo chmod +x /usr/bin/rocket-tui-* 2>/dev/null || true
+echo -e "${GREEN}[OK] TUI scripts installed${NC}"
+
+# 7. Install rocketctl
 echo -e "${CYAN}[*] Installing rocketctl...${NC}"
 sudo cp "$PROJECT_DIR/scripts/rocketctl" /usr/bin/rocketctl
 sudo chmod +x /usr/bin/rocketctl
 echo -e "${GREEN}[OK] rocketctl installed${NC}"
 
-# 7. Install session desktop entry
+# 8. Install session desktop entry
 echo -e "${CYAN}[*] Installing session entry...${NC}"
 sudo mkdir -p /usr/share/wayland-sessions
 sudo cp "$PROJECT_DIR/session/rocket-desktop.desktop" /usr/share/wayland-sessions/
 echo -e "${GREEN}[OK] Session entry installed${NC}"
 
-# 8. Install default config
+# 9. Install default config
 echo -e "${CYAN}[*] Installing default configuration...${NC}"
 mkdir -p "$HOME/.config/rocket"
 if [ ! -f "$HOME/.config/rocket/rocket.conf" ]; then
@@ -73,7 +79,7 @@ if [ ! -f "$HOME/.config/rocket/appearance.conf" ]; then
 fi
 echo -e "${GREEN}[OK] Configuration installed${NC}"
 
-# 9. Install wallpaper
+# 10. Install wallpaper
 echo -e "${CYAN}[*] Installing wallpaper...${NC}"
 sudo mkdir -p /usr/share/rocket-desktop/wallpapers
 sudo cp "$PROJECT_DIR/wallpapers/"* /usr/share/rocket-desktop/wallpapers/ 2>/dev/null || true
@@ -90,7 +96,7 @@ cat > "$HOME/.config/rocket-desktop/wallpaper.json" << 'WALLPAPER'
 WALLPAPER
 echo -e "${GREEN}[OK] Wallpaper installed${NC}"
 
-# 10. Enable KWin tiling script
+# 11. Enable KWin tiling script
 echo -e "${CYAN}[*] Enabling KWin tiling script...${NC}"
 mkdir -p "$HOME/.config"
 KWINRC="$HOME/.config/kwinrc"
@@ -130,25 +136,83 @@ KWINCFG
 fi
 echo -e "${GREEN}[OK] KWin config updated${NC}"
 
+# 12. Configure SDDM Auto-Login
+echo -e "${CYAN}[*] Configuring SDDM auto-login...${NC}"
+SDDM_CONF="/etc/sddm.conf.d/autologin.conf"
+CURRENT_USER=$(whoami)
+
+if command -v sddm &> /dev/null; then
+    sudo mkdir -p /etc/sddm.conf.d
+    sudo tee "$SDDM_CONF" > /dev/null << SDDMCFG
+[Autologin]
+User=$CURRENT_USER
+Session=rocket-desktop.desktop
+SDDMCFG
+    echo -e "${GREEN}[OK] SDDM auto-login configured for user: $CURRENT_USER${NC}"
+else
+    echo -e "${YELLOW}[WARN] SDDM not found - skipping auto-login config${NC}"
+    echo -e "${YELLOW}       You can manually select 'Rocket' from your display manager${NC}"
+fi
+
+# 13. Create keybinds reference file
+echo -e "${CYAN}[*] Creating keybinds reference...${NC}"
+mkdir -p "$HOME/.config/rocket"
+cat > "$HOME/.config/rocket/keybinds.txt" << 'KEYBINDS'
+Rocket Desktop Keybinds
+=======================
+
+Window Management:
+  Super+Q          Close window
+  Super+F          Toggle float
+  Super+M          Maximize
+  Super+H/L        Shrink/Grow master
+  Super+J/K        Focus next/prev
+
+Tiling:
+  Super+Space      Cycle layout
+  Super+1-5        Switch workspace
+  Super+Shift+1-5  Move to workspace
+
+Navigation:
+  Super+Arrow      Focus direction
+  Super+Shift+Arrow Swap windows
+  Super+Ctrl+Arrow Move windows
+
+Apps:
+  Super+Return     Terminal
+  Super+Shift+Return Browser
+  Super+Shift+F    File manager
+  Super+Escape     Launcher (Rocket menu)
+  Super+Print      Screenshot
+
+System:
+  Super+Shift+E    Power menu
+  Super+L          Lock screen
+KEYBINDS
+echo -e "${GREEN}[OK] Keybinds reference created${NC}"
+
 echo ""
 echo -e "${GREEN}═══════════════════════════════════════════${NC}"
 echo -e "${GREEN}  Rocket Desktop installed successfully!   ${NC}"
 echo -e "${GREEN}═══════════════════════════════════════════${NC}"
 echo ""
-echo -e "  To start:"
-echo -e "    ${CYAN}1. Log out and select 'Rocket' in SDDM${NC}"
+if command -v sddm &> /dev/null; then
+    echo -e "  ${GREEN}Auto-login is configured!${NC}"
+    echo -e "  After reboot, Rocket will start automatically."
+    echo ""
+fi
+echo -e "  To start manually:"
+echo -e "    ${CYAN}1. Log out and select 'Rocket' in your display manager${NC}"
 echo -e "    ${CYAN}2. Or run: rocket-session${NC}"
 echo ""
 echo -e "  Controls:"
-echo -e "    ${YELLOW}Meta+T${NC}       Cycle layout"
-echo -e "    ${YELLOW}Meta+H/L${NC}     Shrink/grow master"
-echo -e "    ${YELLOW}Meta+Arrow${NC}   Focus window"
-echo -e "    ${YELLOW}Meta+Shift+Arrow${NC}  Swap window"
-echo -e "    ${YELLOW}Meta+Space${NC}   Toggle float"
-echo -e "    ${YELLOW}Meta+Q${NC}       Close window"
+echo -e "    ${YELLOW}Super+Escape${NC}   Open Rocket Menu"
+echo -e "    ${YELLOW}Super+Return${NC}   Terminal"
+echo -e "    ${YELLOW}Super+Space${NC}    Cycle layout"
+echo -e "    ${YELLOW}Super+Arrow${NC}    Focus window"
+echo -e "    ${YELLOW}Super+Q${NC}        Close window"
 echo ""
 echo -e "  Config:"
-echo -e "    ${YELLOW}rocketctl status${NC}          Show status"
-echo -e "    ${YELLOW}rocketctl layout set master${NC}  Change layout"
-echo -e "    ${YELLOW}rocketctl config set gap 12${NC}  Change gap"
+echo -e "    ${YELLOW}~/.config/rocket/${NC}           Rocket config"
+echo -e "    ${YELLOW}~/.config/rocket/keybinds.txt${NC}  Keybinds reference"
 echo ""

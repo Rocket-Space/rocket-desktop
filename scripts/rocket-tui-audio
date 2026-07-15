@@ -1,0 +1,58 @@
+#!/bin/bash
+# rocket-tui-audio - Audio control TUI wrapper
+
+show_audio_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║         Audio Settings            ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Volume Control (pavucontrol)"
+    echo -e "  \033[0;32m2)\033[0m PipeWire Volume (pwvucontrol)"
+    echo -e "  \033[0;32m3)\033[0m ALSA Mixer"
+    echo -e "  \033[0;32m4)\033[0m Audio Settings (pavucontrol)"
+    echo -e "  \033[0;32m5)\033[0m Default Sink"
+    echo -e "  \033[0;32m6)\033[0m List Sinks"
+    echo -e "  \033[0;32m7)\033[0m PulseAudio Info"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-7]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) pavucontrol ;;
+        2) pwvucontrol 2>/dev/null || pavucontrol ;;
+        3) alsa Mixer ;;
+        4) pavucontrol ;;
+        5)
+            echo "Default sink:"
+            wpctl status | grep -A5 "Sinks:"
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_audio_menu
+            ;;
+        6)
+            echo "Available sinks:"
+            wpctl status
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_audio_menu
+            ;;
+        7)
+            echo "PulseAudio/PipeWire status:"
+            pactl info 2>/dev/null || echo "PulseAudio not available"
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            show_audio_menu
+            ;;
+        0) return ;;
+        *) show_audio_menu ;;
+    esac
+}
+
+show_audio_menu

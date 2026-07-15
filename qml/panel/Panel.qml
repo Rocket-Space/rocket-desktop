@@ -11,17 +11,22 @@ Item {
     property var windows: []
     property string clockTime: Qt.formatDateTime(new Date(), "HH:mm")
     property bool launcherVisible: false
-    property var defaultTray: [
-        { icon: "\u26A1", itemId: "battery" },
-        { icon: "\u2756", itemId: "network" },
-        { icon: "\u266B", itemId: "volume" }
-    ]
+
+    property real batteryLevel: 100
+    property bool batteryCharging: false
+    property string networkName: "Connected"
+    property bool networkConnected: true
+    property int volumeLevel: 75
+    property bool volumeMuted: false
+    property real cpuUsage: 0
+    property bool bluetoothEnabled: false
 
     signal workspaceChanged(int index)
     signal windowClicked(int id)
     signal windowCloseClicked(int id)
     signal launcherToggled()
     signal statusClicked(string area)
+    signal openTerminal(string command)
 
     width: root.Window ? root.Window.width : 800
     height: 44
@@ -34,6 +39,61 @@ Item {
         running: true
         repeat: true
         onTriggered: clockTime = Qt.formatDateTime(new Date(), "HH:mm")
+    }
+
+    Timer {
+        interval: 2000
+        running: true
+        repeat: true
+        onTriggered: {
+            updateSystemStats()
+        }
+    }
+
+    function updateSystemStats() {
+        try {
+            var cpuFile = "/proc/stat"
+            var xhr = new XMLHttpRequest()
+            xhr.open("GET", "file://" + cpuFile, false)
+            xhr.send()
+            if (xhr.status === 200) {
+                var lines = xhr.responseText.split("\n")
+                if (lines.length > 0) {
+                    var parts = lines[0].split(/\s+/)
+                    if (parts.length >= 5) {
+                        var user = parseInt(parts[1]) || 0
+                        var nice = parseInt(parts[2]) || 0
+                        var system = parseInt(parts[3]) || 0
+                        var idle = parseInt(parts[4]) || 0
+                        var total = user + nice + system + idle
+                        root.cpuUsage = Math.round((total - idle) / total * 100)
+                    }
+                }
+            }
+        } catch(e) {}
+    }
+
+    function getBatteryIcon() {
+        if (root.batteryCharging) return "\u26A1"
+        if (root.batteryLevel > 75) return "\u25CF"
+        if (root.batteryLevel > 50) return "\u25D4"
+        if (root.batteryLevel > 25) return "\u25D1"
+        return "\u25D2"
+    }
+
+    function getVolumeIcon() {
+        if (root.volumeMuted || root.volumeLevel === 0) return "\u2716"
+        if (root.volumeLevel < 33) return "\u266A"
+        if (root.volumeLevel < 66) return "\u266B"
+        return "\u266C"
+    }
+
+    function getNetworkIcon() {
+        return root.networkConnected ? "\u25C8" : "\u25CE"
+    }
+
+    function getBluetoothIcon() {
+        return root.bluetoothEnabled ? "\u25B8" : "\u25B9"
     }
 
     Rectangle {
@@ -51,6 +111,7 @@ Item {
         anchors.rightMargin: 12
         spacing: 0
 
+        // Workspace dots
         RowLayout {
             id: workspaceDots
             spacing: 6
@@ -87,6 +148,7 @@ Item {
             color: Common.Theme.border
         }
 
+        // Taskbar
         RowLayout {
             id: taskbar
             spacing: 2
@@ -146,6 +208,7 @@ Item {
 
         Item { Layout.fillWidth: true }
 
+        // Clock
         Rectangle {
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredWidth: clockLabel.implicitWidth + 20
@@ -165,34 +228,259 @@ Item {
 
         Item { Layout.fillWidth: true }
 
+        // Status widgets
         RowLayout {
             id: statusArea
-            spacing: 6
+            spacing: 4
             Layout.alignment: Qt.AlignVCenter
 
-            Repeater {
-                model: root.defaultTray
+            // CPU Monitor
+            Rectangle {
+                width: cpuLayout.implicitWidth + 16
+                height: 28
+                radius: 6
+                color: cpuMouse.containsMouse ? Common.Theme.withAlpha(Common.Theme.accent, 0.15) : "transparent"
 
-                Item {
-                    width: 20
-                    height: 20
+                RowLayout {
+                    id: cpuLayout
+                    anchors.centerIn: parent
+                    spacing: 4
 
                     Text {
-                        anchors.centerIn: parent
-                        text: modelData ? modelData.icon : ""
-                        font.pixelSize: 14
-                        color: Common.Theme.text
-                        opacity: 0.8
+                        text: "\u25A3"
+                        font.pixelSize: 12
+                        color: Common.Theme.accent
                     }
 
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onEntered: parent.children[0].opacity = 1.0
-                        onExited: parent.children[0].opacity = 0.8
-                        onClicked: root.statusClicked(modelData.itemId || "")
+                    Text {
+                        text: root.cpuUsage + "%"
+                        font.family: Common.Theme.fontFamily
+                        font.pixelSize: 11
+                        font.bold: true
+                        color: Common.Theme.text
                     }
+                }
+
+                MouseArea {
+                    id: cpuMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.openTerminal("htop || btop || top")
+                }
+
+                ToolTip {
+                    visible: cpuMouse.containsMouse
+                    text: "CPU: " + root.cpuUsage + "%\nClick to open htop"
+                    delay: 500
+                }
+            }
+
+            Rectangle {
+                Layout.preferredWidth: 1
+                Layout.fillHeight: true
+                Layout.topMargin: 6
+                Layout.bottomMargin: 6
+                color: Common.Theme.border
+                opacity: 0.5
+            }
+
+            // Battery
+            Rectangle {
+                width: batteryLayout.implicitWidth + 16
+                height: 28
+                radius: 6
+                color: batteryMouse.containsMouse ? Common.Theme.withAlpha(Common.Theme.accent, 0.15) : "transparent"
+
+                RowLayout {
+                    id: batteryLayout
+                    anchors.centerIn: parent
+                    spacing: 4
+
+                    Text {
+                        text: getBatteryIcon()
+                        font.pixelSize: 12
+                        color: root.batteryCharging ? "#00ff88" : (root.batteryLevel < 20 ? "#ff3355" : Common.Theme.text)
+                    }
+
+                    Text {
+                        text: Math.round(root.batteryLevel) + "%"
+                        font.family: Common.Theme.fontFamily
+                        font.pixelSize: 11
+                        font.bold: true
+                        color: Common.Theme.text
+                        visible: root.batteryLevel < 100 || root.batteryCharging
+                    }
+                }
+
+                MouseArea {
+                    id: batteryMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.openTerminal("powerprofilesctl get && upower -i /org/freedesktop/UPower/devices/battery_BAT0")
+                }
+
+                ToolTip {
+                    visible: batteryMouse.containsMouse
+                    text: "Battery: " + Math.round(root.batteryLevel) + "%" + (root.batteryCharging ? " (Charging)" : "") + "\nClick for details"
+                    delay: 500
+                }
+            }
+
+            Rectangle {
+                Layout.preferredWidth: 1
+                Layout.fillHeight: true
+                Layout.topMargin: 6
+                Layout.bottomMargin: 6
+                color: Common.Theme.border
+                opacity: 0.5
+            }
+
+            // Network
+            Rectangle {
+                width: networkLayout.implicitWidth + 16
+                height: 28
+                radius: 6
+                color: networkMouse.containsMouse ? Common.Theme.withAlpha(Common.Theme.accent, 0.15) : "transparent"
+
+                RowLayout {
+                    id: networkLayout
+                    anchors.centerIn: parent
+                    spacing: 4
+
+                    Text {
+                        text: getNetworkIcon()
+                        font.pixelSize: 12
+                        color: root.networkConnected ? "#00ff88" : "#ff3355"
+                    }
+
+                    Text {
+                        text: root.networkConnected ? (root.networkName || "WiFi") : "Offline"
+                        font.family: Common.Theme.fontFamily
+                        font.pixelSize: 11
+                        font.bold: true
+                        color: Common.Theme.text
+                        elide: Text.ElideRight
+                        maximumLineCount: 1
+                        Layout.maximumWidth: 80
+                    }
+                }
+
+                MouseArea {
+                    id: networkMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.openTerminal("nmtui || nmcli device wifi list")
+                }
+
+                ToolTip {
+                    visible: networkMouse.containsMouse
+                    text: "Network: " + (root.networkConnected ? root.networkName : "Disconnected") + "\nClick to open nmtui"
+                    delay: 500
+                }
+            }
+
+            Rectangle {
+                Layout.preferredWidth: 1
+                Layout.fillHeight: true
+                Layout.topMargin: 6
+                Layout.bottomMargin: 6
+                color: Common.Theme.border
+                opacity: 0.5
+            }
+
+            // Volume
+            Rectangle {
+                width: volumeLayout.implicitWidth + 16
+                height: 28
+                radius: 6
+                color: volumeMouse.containsMouse ? Common.Theme.withAlpha(Common.Theme.accent, 0.15) : "transparent"
+
+                RowLayout {
+                    id: volumeLayout
+                    anchors.centerIn: parent
+                    spacing: 4
+
+                    Text {
+                        text: getVolumeIcon()
+                        font.pixelSize: 12
+                        color: root.volumeMuted ? "#ff3355" : Common.Theme.text
+                    }
+
+                    Text {
+                        text: root.volumeMuted ? "Muted" : root.volumeLevel + "%"
+                        font.family: Common.Theme.fontFamily
+                        font.pixelSize: 11
+                        font.bold: true
+                        color: Common.Theme.text
+                    }
+                }
+
+                MouseArea {
+                    id: volumeMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.openTerminal("pavucontrol || pwvucontrol || alsamixer")
+                    onWheel: {
+                        if (wheel.angleDelta.y > 0) {
+                            root.volumeLevel = Math.min(100, root.volumeLevel + 5)
+                        } else {
+                            root.volumeLevel = Math.max(0, root.volumeLevel - 5)
+                        }
+                    }
+                }
+
+                ToolTip {
+                    visible: volumeMouse.containsMouse
+                    text: "Volume: " + (root.volumeMuted ? "Muted" : root.volumeLevel + "%") + "\nClick for mixer, Scroll to adjust"
+                    delay: 500
+                }
+            }
+
+            Rectangle {
+                Layout.preferredWidth: 1
+                Layout.fillHeight: true
+                Layout.topMargin: 6
+                Layout.bottomMargin: 6
+                color: Common.Theme.border
+                opacity: 0.5
+            }
+
+            // Bluetooth
+            Rectangle {
+                width: bluetoothLayout.implicitWidth + 16
+                height: 28
+                radius: 6
+                color: bluetoothMouse.containsMouse ? Common.Theme.withAlpha(Common.Theme.accent, 0.15) : "transparent"
+
+                RowLayout {
+                    id: bluetoothLayout
+                    anchors.centerIn: parent
+                    spacing: 4
+
+                    Text {
+                        text: getBluetoothIcon()
+                        font.pixelSize: 12
+                        color: root.bluetoothEnabled ? "#00d4ff" : Common.Theme.text
+                        opacity: root.bluetoothEnabled ? 1.0 : 0.5
+                    }
+                }
+
+                MouseArea {
+                    id: bluetoothMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.openTerminal("bluetoothctl || blueman-manager")
+                }
+
+                ToolTip {
+                    visible: bluetoothMouse.containsMouse
+                    text: "Bluetooth: " + (root.bluetoothEnabled ? "Enabled" : "Disabled") + "\nClick to open bluetoothctl"
+                    delay: 500
                 }
             }
         }
@@ -205,6 +493,7 @@ Item {
             color: Common.Theme.border
         }
 
+        // Launcher button
         Rectangle {
             Layout.preferredWidth: 32
             Layout.preferredHeight: 32
