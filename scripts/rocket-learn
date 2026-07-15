@@ -1,0 +1,80 @@
+#!/bin/bash
+# rocket-learn - Documentation and help for Rocket Desktop
+
+show_main_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Learn & Documentation       ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m ⌨️  Keybindings"
+    echo -e "  \033[0;32m2)\033[0m 🚀 Rocket Docs"
+    echo -e "  \033[0;32m3)\033[0m 🪟 KWin Wiki"
+    echo -e "  \033[0;32m4)\033[0m 📚 Arch Wiki"
+    echo -e "  \033[0;32m5)\033[0m 📝 Neovim Docs"
+    echo -e "  \033[0;32m6)\033[0m 🐚 Bash Guide"
+    echo -e "  \033[0;32m7)\033[0m 🐧 Linux Journey"
+    echo -e "  \033[0;32m8)\033[0m 💻 Command Line Tips"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-8]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) show_keybindings ;;
+        2) xdg-open https://github.com/Rocket-Space/rocket-desktop ;;
+        3) xdg-open https://wiki.archlinux.org/title/KWin ;;
+        4) xdg-open https://wiki.archlinux.org ;;
+        5) xdg-open https://www.lazyvim.org/keymaps ;;
+        6) xdg-open https://devhints.io/bash ;;
+        7) xdg-open https://linuxjourney.com ;;
+        8) xdg-open https://linuxcommand.org ;;
+        0) return ;;
+        *) show_main_menu ;;
+    esac
+    show_main_menu
+}
+
+show_keybindings() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Rocket Keybindings          ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[1;33mWindow Management:\033[0m"
+    echo -e "    Super+Q          Close window"
+    echo -e "    Super+F          Toggle float"
+    echo -e "    Super+M          Maximize"
+    echo -e "    Super+H/L        Shrink/Grow master"
+    echo -e "    Super+J/K        Focus next/prev"
+    echo ""
+    echo -e "  \033[1;33mTiling:\033[0m"
+    echo -e "    Super+Space      Cycle layout"
+    echo -e "    Super+1-5        Switch workspace"
+    echo -e "    Super+Shift+1-5  Move to workspace"
+    echo ""
+    echo -e "  \033[1;33mNavigation:\033[0m"
+    echo -e "    Super+Arrow      Focus direction"
+    echo -e "    Super+Shift+Arrow Swap windows"
+    echo -e "    Super+Ctrl+Arrow Move windows"
+    echo ""
+    echo -e "  \033[1;33mApps:\033[0m"
+    echo -e "    Super+Return     Terminal"
+    echo -e "    Super+Shift+Return Browser"
+    echo -e "    Super+Shift+F    File manager"
+    echo -e "    Super+Escape     Launcher (Rocket menu)"
+    echo -e "    Super+Print      Screenshot"
+    echo ""
+    echo -e "  \033[1;33mSystem:\033[0m"
+    echo -e "    Super+Shift+E    Power menu"
+    echo -e "    Super+L          Lock screen"
+    echo -e ""
+    echo -ne "Press Enter to continue..."
+    read -r
+}
+
+show_main_menu

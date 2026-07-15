@@ -1,0 +1,46 @@
+#!/bin/bash
+# rocket-update - System updater for Rocket Desktop
+
+present_terminal() {
+    kitty -e bash -c "$1" 2>/dev/null || alacritty -e bash -c "$1" 2>/dev/null || foot bash -c "$1" 2>/dev/null || xdg-terminal-exec -- bash -c "$1" 2>/dev/null
+}
+
+show_main_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Update System               ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m 🔄 Full System Update"
+    echo -e "  \033[0;32m2)\033[0m 📦 AUR Packages Only"
+    echo -e "  \033[0;32m3)\033[0m 🪞 Update Mirror List"
+    echo -e "  \033[0;32m4)\033[0m 🔑 Update Keyring"
+    echo -e "  \033[0;32m5)\033[0m 🧹 Clean Package Cache"
+    echo -e "  \033[0;32m6)\033[0m ⚡ Update Firmware"
+    echo -e "  \033[0;32m7)\033[0m 🕐 Update Timezone"
+    echo -e "  \033[0;32m8)\033[0m ⏰ Sync Time"
+    echo -e "  \033[0;32m9)\033[0m 🔒 Update Password"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-9]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "sudo pacman -Syu && echo 'System updated!' || echo 'Failed'" ;;
+        2) present_terminal "yay -Sua && echo 'AUR updated!' || echo 'Failed'" ;;
+        3) present_terminal "sudo reflector --latest 20 --protocol https --save /etc/pacman.d/mirrorlist && echo 'Mirrors updated!'" ;;
+        4) present_terminal "sudo pacman -S archlinux-keyring && echo 'Keyring updated!'" ;;
+        5) present_terminal "sudo paccache -r && echo 'Cache cleaned!'" ;;
+        6) present_terminal "sudo fwupdmgr refresh && sudo fwupdmgr update && echo 'Firmware updated!'" ;;
+        7) present_terminal "timedatectl list-timezones && echo 'Use: sudo timedatectl set-timezone TIMEZONE'" ;;
+        8) present_terminal "sudo timedatectl set-ntp true && echo 'NTP synced!'" ;;
+        9) present_terminal "passwd && echo 'Password updated!'" ;;
+        0) return ;;
+        *) show_main_menu ;;
+    esac
+    show_main_menu
+}
+
+show_main_menu

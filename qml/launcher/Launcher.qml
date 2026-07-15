@@ -24,31 +24,35 @@ Item {
     height: 500
 
     property var categories: [
-        { name: "Apps", icon: "\u25CB", desc: "Launch applications" },
-        { name: "Learn", icon: "\u2139", desc: "Documentation & help" },
-        { name: "Trigger", icon: "\u25B6", desc: "Actions & utilities" },
-        { name: "Style", icon: "\u2606", desc: "Theme & appearance" },
-        { name: "Setup", icon: "\u2699", desc: "System settings" },
-        { name: "Install", icon: "\u271A", desc: "Install packages" },
-        { name: "Remove", icon: "\u2718", desc: "Remove packages" },
-        { name: "Update", icon: "\u21BB", desc: "System updates" },
-        { name: "About", icon: "\u24D8", desc: "About Rocket" },
-        { name: "System", icon: "\u23FB", desc: "Power & session" }
+        { name: "Apps", icon: "\u25CB", desc: "Launch applications", script: "" },
+        { name: "Learn", icon: "\u2139", desc: "Documentation & help", script: "rocket-learn" },
+        { name: "Trigger", icon: "\u25B6", desc: "Actions & utilities", script: "rocket-trigger" },
+        { name: "Style", icon: "\u2606", desc: "Theme & appearance", script: "rocket-style" },
+        { name: "Setup", icon: "\u2699", desc: "System settings", script: "rocket-setup" },
+        { name: "Install", icon: "\u271A", desc: "Install packages", script: "rocket-install" },
+        { name: "Remove", icon: "\u2718", desc: "Remove packages", script: "rocket-remove" },
+        { name: "Update", icon: "\u21BB", desc: "System updates", script: "rocket-update" },
+        { name: "About", icon: "\u24D8", desc: "About Rocket", script: "rocket-settings --settings" },
+        { name: "System", icon: "\u23FB", desc: "Power & session", script: "rocket-system" }
     ]
 
     property var learnItems: [
-        { name: "Keybindings", icon: "\u2328", command: "cat ~/.config/rocket/keybinds.txt 2>/dev/null || echo 'No keybinds file'" },
+        { name: "Keybindings", icon: "\u2328", command: "rocket-learn" },
         { name: "Rocket Docs", icon: "\u25CB", command: "xdg-open https://github.com/Rocket-Space/rocket-desktop" },
-        { name: "KWin Wiki", icon: "\u25CB", command: "xdg-open https://community.kde.org/KWin" },
-        { name: "Arch Wiki", icon: "\u25CB", command: "xdg-open https://wiki.archlinux.org" }
+        { name: "KWin Wiki", icon: "\u25CB", command: "xdg-open https://wiki.archlinux.org/title/KWin" },
+        { name: "Arch Wiki", icon: "\u25CB", command: "xdg-open https://wiki.archlinux.org" },
+        { name: "Neovim Docs", icon: "\u25CB", command: "xdg-open https://www.lazyvim.org/keymaps" },
+        { name: "Bash Guide", icon: "\u25CB", command: "xdg-open https://devhints.io/bash" }
     ]
 
     property var triggerItems: [
-        { name: "Screenshot", icon: "\u25A3", command: "grim -g \"$(slurp)\" - | wl-copy" },
-        { name: "Screen Record", icon: "\u25B6", command: "wf-recorder -f /tmp/recording.mp4" },
-        { name: "Color Picker", icon: "\u25C9", command: "grim -g \"$(slurp)\" - | convert - -crop 1x1+0+0 txt:-" },
-        { name: "Clipboard", icon: "\u2398", command: "cliphist list | wofi --dmenu | cliphist decode | wl-copy" },
-        { name: "Timer", icon: "\u23F3", command: "kitty -e bash -c 'echo \"Timer (minutes):\"; read m; sleep $((m*60)); echo DONE | wall'" }
+        { name: "Screenshot", icon: "\u25A3", command: "rocket-trigger" },
+        { name: "Screen Record", icon: "\u25B6", command: "rocket-trigger" },
+        { name: "Color Picker", icon: "\u25C9", command: "hyprpicker -a 2>/dev/null || echo 'hyprpicker not found'" },
+        { name: "Clipboard", icon: "\u2398", command: "cliphist list | wofi --dmenu | cliphist decode | wl-copy 2>/dev/null || echo 'cliphist not found'" },
+        { name: "Timer", icon: "\u23F3", command: "rocket-trigger" },
+        { name: "Share", icon: "\u25CB", command: "localsend 2>/dev/null || echo 'localsend not found'" },
+        { name: "System Info", icon: "\u25CB", command: "neofetch 2>/dev/null || screenfetch 2>/dev/null || echo 'No info tool found'" }
     ]
 
     property var styleItems: [
@@ -56,48 +60,63 @@ Item {
         { name: "Wallpaper", icon: "\u25A3", command: "rocket-settings --wallpaper" },
         { name: "Font", icon: "\u25B4", command: "rocket-settings --font" },
         { name: "Corners", icon: "\u25CB", command: "rocket-settings --corners" },
-        { name: "Colors", icon: "\u25C9", command: "rocket-settings --colors" }
+        { name: "Colors", icon: "\u25C9", command: "rocket-settings --colors" },
+        { name: "Open GUI Settings", icon: "\u25CB", command: "rocket-settings --settings" }
     ]
 
     property var setupItems: [
-        { name: "Audio", icon: "\u266B", command: "pavucontrol || pwvucontrol" },
-        { name: "WiFi", icon: "\u25C8", command: "nmtui" },
-        { name: "Bluetooth", icon: "\u25B8", command: "bluetoothctl" },
-        { name: "Power Profile", icon: "\u26A1", command: "powerprofilesctl get" },
-        { name: "Monitors", icon: "\u25A1", command: "arandr || nvidia-settings" },
-        { name: "Input", icon: "\u2328", command: "rocket-settings --input" },
-        { name: "DNS", icon: "\u25CB", command: "resolvectl status" },
-        { name: "Firewall", icon: "\u25C9", command: "sudo ufw status" }
+        { name: "Audio", icon: "\u266B", command: "rocket-tui-audio" },
+        { name: "WiFi", icon: "\u25C8", command: "rocket-tui-wifi" },
+        { name: "Bluetooth", icon: "\u25B8", command: "rocket-tui-bluetooth" },
+        { name: "Power Profile", icon: "\u26A1", command: "powerprofilesctl get && echo 'Use: powerprofilesctl set balanced|performance|power-saver'" },
+        { name: "Monitors", icon: "\u25A1", command: "arandr 2>/dev/null || nvidia-settings 2>/dev/null || echo 'No display config tool'" },
+        { name: "Input Devices", icon: "\u2328", command: "rocket-settings --input" },
+        { name: "DNS", icon: "\u25CB", command: "resolvectl status 2>/dev/null || echo 'DNS info not available'" },
+        { name: "Firewall", icon: "\u25C9", command: "sudo ufw status 2>/dev/null || echo 'UFW not installed'" },
+        { name: "Sleep/Hibernate", icon: "\u25CB", command: "systemctl status sleep.target suspend.target hibernate.target 2>/dev/null" },
+        { name: "Security", icon: "\u25CB", command: "fprintd-list $USER 2>/dev/null || echo 'fprintd not installed'" },
+        { name: "Config Files", icon: "\u25CB", command: "ls ~/.config/rocket/ 2>/dev/null" },
+        { name: "Restore Defaults", icon: "\u25CB", command: "cp /usr/share/rocket-desktop/config/default/* ~/.config/rocket/ 2>/dev/null && echo 'Defaults restored'" }
     ]
 
     property var installItems: [
-        { name: "Package", icon: "\u271A", command: "paru -S --needed" },
-        { name: "Browser", icon: "\u25CB", command: "paru -S --needed firefox chromium brave" },
-        { name: "Editor", icon: "\u25B4", command: "paru -S --needed neovim vscode" },
-        { name: "Terminal", icon: "\u25B7", command: "paru -S --needed kitty alacritty" },
-        { name: "Gaming", icon: "\u25CF", command: "paru -S --needed steam lutris" },
-        { name: "Development", icon: "\u25CB", command: "paru -S --needed base-devel git" },
-        { name: "AI Tools", icon: "\u25C9", command: "paru -S --needed ollama" },
-        { name: "Fonts", icon: "\u25B4", command: "paru -S --needed ttf-firacode-nerd" }
+        { name: "Package", icon: "\u271A", command: "rocket-install" },
+        { name: "Browser", icon: "\u25CB", command: "rocket-install --direct browser" },
+        { name: "Editor", icon: "\u25B4", command: "rocket-install --direct editor" },
+        { name: "Terminal", icon: "\u25B7", command: "rocket-install --direct terminal" },
+        { name: "Gaming", icon: "\u25CF", command: "rocket-install --direct gaming" },
+        { name: "Development", icon: "\u25CB", command: "rocket-install --direct development" },
+        { name: "AI Tools", icon: "\u25C9", command: "rocket-install --direct ai" },
+        { name: "Fonts", icon: "\u25B4", command: "rocket-install --direct font" },
+        { name: "Style", icon: "\u25CB", command: "rocket-install --direct style" },
+        { name: "TUI Apps", icon: "\u25CB", command: "rocket-install --direct tui" },
+        { name: "Services", icon: "\u25CB", command: "rocket-install --direct service" },
+        { name: "Windows/VM", icon: "\u25CB", command: "rocket-install --direct windows" }
     ]
 
     property var removeItems: [
-        { name: "Package", icon: "\u2718", command: "paru -Rns" },
-        { name: "Orphans", icon: "\u2718", command: "paru -Rns $(pacman -Qdtq)" },
-        { name: "Cache", icon: "\u2718", command: "paccache -r" },
-        { name: "AUR Cache", icon: "\u2718", command: "paru -Sc" }
+        { name: "Package", icon: "\u2718", command: "rocket-remove" },
+        { name: "Orphans", icon: "\u2718", command: "sudo pacman -Rns $(pacman -Qdtq) 2>/dev/null && echo 'Orphans removed' || echo 'No orphans'" },
+        { name: "Cache", icon: "\u2718", command: "sudo paccache -r && echo 'Cache cleaned'" },
+        { name: "Browser", icon: "\u2718", command: "rocket-remove" },
+        { name: "Editor", icon: "\u2718", command: "rocket-remove" },
+        { name: "Gaming", icon: "\u2718", command: "rocket-remove" }
     ]
 
     property var updateItems: [
-        { name: "Full System", icon: "\u21BB", command: "paru -Syu" },
-        { name: "AUR Only", icon: "\u21BB", command: "paru -Sua" },
+        { name: "Full System", icon: "\u21BB", command: "sudo pacman -Syu" },
+        { name: "AUR Only", icon: "\u21BB", command: "yay -Sua" },
         { name: "Mirror List", icon: "\u21BB", command: "sudo reflector --latest 20 --protocol https --save /etc/pacman.d/mirrorlist" },
         { name: "Keyring", icon: "\u21BB", command: "sudo pacman -S archlinux-keyring" },
-        { name: "Clean Cache", icon: "\u21BB", command: "paccache -r" }
+        { name: "Clean Cache", icon: "\u21BB", command: "sudo paccache -r" },
+        { name: "Firmware", icon: "\u21BB", command: "sudo fwupdmgr refresh && sudo fwupdmgr update" },
+        { name: "Timezone", icon: "\u21BB", command: "timedatectl list-timezones" },
+        { name: "Sync Time", icon: "\u21BB", command: "sudo timedatectl set-ntp true" }
     ]
 
     property var systemItems: [
         { name: "Lock", icon: "\u21E9", command: "loginctl lock-session" },
+        { name: "Screensaver", icon: "\u25CB", command: "xset s activate 2>/dev/null || echo 'Screensaver not available'" },
         { name: "Logout", icon: "\u21E9", command: "loginctl terminate-user $USER" },
         { name: "Suspend", icon: "\u21E9", command: "systemctl suspend" },
         { name: "Hibernate", icon: "\u21E9", command: "systemctl hibernate" },
@@ -242,7 +261,6 @@ Item {
             anchors.margins: Common.Theme.gap
             spacing: Common.Theme.gap
 
-            // Header with back button and search
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 40
@@ -259,7 +277,6 @@ Item {
                     anchors.rightMargin: 12
                     spacing: 8
 
-                    // Back button
                     Text {
                         text: root.currentView !== "categories" ? "\u25C0" : "\u25CB"
                         font.pixelSize: 14
@@ -275,7 +292,6 @@ Item {
                         }
                     }
 
-                    // Search input
                     TextInput {
                         id: searchInput
                         Layout.fillWidth: true
@@ -330,7 +346,6 @@ Item {
                         }
                     }
 
-                    // View indicator
                     Text {
                         text: {
                             if (root.currentView === "categories") return ""
@@ -351,7 +366,6 @@ Item {
                 color: Common.Theme.border
             }
 
-            // Content area
             Loader {
                 Layout.fillWidth: true
                 Layout.fillHeight: true

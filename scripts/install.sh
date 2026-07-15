@@ -62,13 +62,23 @@ sudo cp "$PROJECT_DIR/scripts/rocketctl" /usr/bin/rocketctl
 sudo chmod +x /usr/bin/rocketctl
 echo -e "${GREEN}[OK] rocketctl installed${NC}"
 
-# 8. Install session desktop entry
+# 8. Install rocket menu scripts
+echo -e "${CYAN}[*] Installing rocket menu scripts...${NC}"
+for script in rocket-settings rocket-install rocket-remove rocket-update rocket-style rocket-setup rocket-trigger rocket-learn rocket-system; do
+    if [ -f "$PROJECT_DIR/scripts/$script" ]; then
+        sudo cp "$PROJECT_DIR/scripts/$script" "/usr/bin/$script"
+        sudo chmod +x "/usr/bin/$script"
+    fi
+done
+echo -e "${GREEN}[OK] Rocket menu scripts installed${NC}"
+
+# 9. Install session desktop entry
 echo -e "${CYAN}[*] Installing session entry...${NC}"
 sudo mkdir -p /usr/share/wayland-sessions
 sudo cp "$PROJECT_DIR/session/rocket-desktop.desktop" /usr/share/wayland-sessions/
 echo -e "${GREEN}[OK] Session entry installed${NC}"
 
-# 9. Install default config
+# 10. Install default config
 echo -e "${CYAN}[*] Installing default configuration...${NC}"
 mkdir -p "$HOME/.config/rocket"
 if [ ! -f "$HOME/.config/rocket/rocket.conf" ]; then
@@ -79,7 +89,7 @@ if [ ! -f "$HOME/.config/rocket/appearance.conf" ]; then
 fi
 echo -e "${GREEN}[OK] Configuration installed${NC}"
 
-# 10. Install wallpaper
+# 11. Install wallpaper
 echo -e "${CYAN}[*] Installing wallpaper...${NC}"
 sudo mkdir -p /usr/share/rocket-desktop/wallpapers
 sudo cp "$PROJECT_DIR/wallpapers/"* /usr/share/rocket-desktop/wallpapers/ 2>/dev/null || true
@@ -96,7 +106,7 @@ cat > "$HOME/.config/rocket-desktop/wallpaper.json" << 'WALLPAPER'
 WALLPAPER
 echo -e "${GREEN}[OK] Wallpaper installed${NC}"
 
-# 11. Enable KWin tiling script
+# 12. Enable KWin tiling script
 echo -e "${CYAN}[*] Enabling KWin tiling script...${NC}"
 mkdir -p "$HOME/.config"
 KWINRC="$HOME/.config/kwinrc"
@@ -136,7 +146,7 @@ KWINCFG
 fi
 echo -e "${GREEN}[OK] KWin config updated${NC}"
 
-# 12. Configure SDDM Auto-Login
+# 13. Configure SDDM Auto-Login
 echo -e "${CYAN}[*] Configuring SDDM auto-login...${NC}"
 SDDM_CONF="/etc/sddm.conf.d/autologin.conf"
 CURRENT_USER=$(whoami)
@@ -154,7 +164,7 @@ else
     echo -e "${YELLOW}       You can manually select 'Rocket' from your display manager${NC}"
 fi
 
-# 13. Create keybinds reference file
+# 14. Create keybinds reference file
 echo -e "${CYAN}[*] Creating keybinds reference...${NC}"
 mkdir -p "$HOME/.config/rocket"
 cat > "$HOME/.config/rocket/keybinds.txt" << 'KEYBINDS'

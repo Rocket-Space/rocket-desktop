@@ -1,0 +1,36 @@
+#!/bin/bash
+# rocket-style - Style manager for Rocket Desktop
+
+show_main_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Style & Appearance          ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m 🎨 Theme"
+    echo -e "  \033[0;32m2)\033[0m 🖼️  Wallpaper"
+    echo -e "  \033[0;32m3)\033[0m 🔤 Font"
+    echo -e "  \033[0;32m4)\033[0m ⬜ Corners"
+    echo -e "  \033[0;32m5)\033[0m 🌈 Colors"
+    echo -e "  \033[0;32m6)\033[0m 🖥️  Open GUI Settings"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-6]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) rocket-settings --theme ;;
+        2) rocket-settings --wallpaper ;;
+        3) rocket-settings --font ;;
+        4) rocket-settings --corners ;;
+        5) rocket-settings --colors ;;
+        6) rocket-settings --settings ;;
+        0) return ;;
+        *) show_main_menu ;;
+    esac
+    show_main_menu
+}
+
+show_main_menu

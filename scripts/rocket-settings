@@ -1,0 +1,295 @@
+#!/bin/bash
+# rocket-settings - Settings wrapper for Rocket Desktop
+
+ROCKET_LOG="$HOME/.rocket-session.log"
+
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] rocket-settings: $1" >> "$ROCKET_LOG"
+}
+
+show_help() {
+    echo "Usage: rocket-settings [OPTION]"
+    echo ""
+    echo "Options:"
+    echo "  --settings    Open settings window (GUI)"
+    echo "  --theme       Change theme"
+    echo "  --wallpaper   Change wallpaper"
+    echo "  --font        Change font"
+    echo "  --corners     Configure corners"
+    echo "  --colors      Configure colors"
+    echo "  --input       Configure input devices"
+    echo "  --help        Show this help"
+    echo ""
+    echo "Examples:"
+    echo "  rocket-settings --settings    # Open GUI settings"
+    echo "  rocket-settings --theme       # Change theme via TUI"
+}
+
+open_settings_gui() {
+    if command -v qdbus6 &>/dev/null; then
+        qdbus6 org.Rocket.Settings /org/rocket/Settings org.Rocket.Settings.Toggle 2>/dev/null &
+    elif [ -x "/usr/bin/rocket-session-bin" ]; then
+        /usr/bin/rocket-session-bin --settings &
+    else
+        log "ERROR: Cannot open settings GUI"
+        echo "Error: Settings GUI not available"
+        return 1
+    fi
+}
+
+change_theme() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║         Change Theme              ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Dark (default)"
+    echo -e "  \033[0;32m2)\033[0m Light"
+    echo -e "  \033[0;32m3)\033[0m Cyberpunk"
+    echo -e "  \033[0;32m4)\033[0m Neon"
+    echo -e "  \033[0;32m5)\033[0m Synthwave"
+    echo -e "  \033[0;32m0)\033[0m Cancel"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-5]: \033[0m"
+    read -r choice
+
+    CONFIG="$HOME/.config/rocket/appearance.conf"
+    mkdir -p "$(dirname "$CONFIG")"
+
+    case "$choice" in
+        1)
+            sed -i 's/theme=.*/theme=dark/' "$CONFIG" 2>/dev/null || echo "theme=dark" >> "$CONFIG"
+            echo "Theme set to Dark"
+            ;;
+        2)
+            sed -i 's/theme=.*/theme=light/' "$CONFIG" 2>/dev/null || echo "theme=light" >> "$CONFIG"
+            echo "Theme set to Light"
+            ;;
+        3)
+            sed -i 's/theme=.*/theme=cyberpunk/' "$CONFIG" 2>/dev/null || echo "theme=cyberpunk" >> "$CONFIG"
+            echo "Theme set to Cyberpunk"
+            ;;
+        4)
+            sed -i 's/theme=.*/theme=neon/' "$CONFIG" 2>/dev/null || echo "theme=neon" >> "$CONFIG"
+            echo "Theme set to Neon"
+            ;;
+        5)
+            sed -i 's/theme=.*/theme=synthwave/' "$CONFIG" 2>/dev/null || echo "theme=synthwave" >> "$CONFIG"
+            echo "Theme set to Synthwave"
+            ;;
+        0) return ;;
+        *) echo "Invalid"; change_theme ;;
+    esac
+}
+
+change_wallpaper() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║        Change Wallpaper           ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+
+    WALLPAPER_DIR="/usr/share/rocket-desktop/wallpapers"
+    if [ -d "$WALLPAPER_DIR" ]; then
+        echo "Available wallpapers:"
+        ls -1 "$WALLPAPER_DIR" 2>/dev/null | head -20
+        echo ""
+        echo "Or enter path to custom wallpaper:"
+        echo -ne "  \033[0;36mPath: \033[0m"
+        read -r wallpaper_path
+
+        if [ -n "$wallpaper_path" ] && [ -f "$wallpaper_path" ]; then
+            CONFIG="$HOME/.config/rocket-desktop/wallpaper.json"
+            mkdir -p "$(dirname "$CONFIG")"
+            cat > "$CONFIG" << EOF
+{
+    "imagePath": "$wallpaper_path",
+    "scalingMode": "fill"
+}
+EOF
+            echo "Wallpaper set to: $wallpaper_path"
+            log "Wallpaper changed to: $wallpaper_path"
+        fi
+    else
+        echo "Wallpaper directory not found: $WALLPAPER_DIR"
+        echo -ne "  \033[0;36mPath to wallpaper: \033[0m"
+        read -r wallpaper_path
+        if [ -n "$wallpaper_path" ] && [ -f "$wallpaper_path" ]; then
+            CONFIG="$HOME/.config/rocket-desktop/wallpaper.json"
+            mkdir -p "$(dirname "$CONFIG")"
+            cat > "$CONFIG" << EOF
+{
+    "imagePath": "$wallpaper_path",
+    "scalingMode": "fill"
+}
+EOF
+            echo "Wallpaper set to: $wallpaper_path"
+        fi
+    fi
+}
+
+change_font() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║          Change Font              ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Noto Sans (default)"
+    echo -e "  \033[0;32m2)\033[0m JetBrains Mono"
+    echo -e "  \033[0;32m3)\033[0m Fira Code"
+    echo -e "  \033[0;32m4)\033[0m Cascadia Code"
+    echo -e "  \033[0;32m5)\033[0m Iosevka"
+    echo -e "  \033[0;32m6)\033[0m Victor Mono"
+    echo -e "  \033[0;32m0)\033[0m Cancel"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-6]: \033[0m"
+    read -r choice
+
+    CONFIG="$HOME/.config/rocket/appearance.conf"
+    mkdir -p "$(dirname "$CONFIG")"
+
+    case "$choice" in
+        1) sed -i 's/font_family=.*/font_family=Noto Sans/' "$CONFIG" 2>/dev/null || echo "font_family=Noto Sans" >> "$CONFIG" ;;
+        2) sed -i 's/font_family=.*/font_family=JetBrains Mono/' "$CONFIG" 2>/dev/null || echo "font_family=JetBrains Mono" >> "$CONFIG" ;;
+        3) sed -i 's/font_family=.*/font_family=Fira Code/' "$CONFIG" 2>/dev/null || echo "font_family=Fira Code" >> "$CONFIG" ;;
+        4) sed -i 's/font_family=.*/font_family=Cascadia Code/' "$CONFIG" 2>/dev/null || echo "font_family=Cascadia Code" >> "$CONFIG" ;;
+        5) sed -i 's/font_family=.*/font_family=Iosevka/' "$CONFIG" 2>/dev/null || echo "font_family=Iosevka" >> "$CONFIG" ;;
+        6) sed -i 's/font_family=.*/font_family=Victor Mono/' "$CONFIG" 2>/dev/null || echo "font_family=Victor Mono" >> "$CONFIG" ;;
+        0) return ;;
+        *) echo "Invalid"; change_font ;;
+    esac
+    echo "Font updated"
+}
+
+change_corners() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║        Configure Corners          ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Sharp (0px)"
+    echo -e "  \033[0;32m2)\033[0m Slight (4px)"
+    echo -e "  \033[0;32m3)\033[0m Medium (8px)"
+    echo -e "  \033[0;32m4)\033[0m Round (12px)"
+    echo -e "  \033[0;32m5)\033[0m Extra Round (16px)"
+    echo -e "  \033[0;32m0)\033[0m Cancel"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-5]: \033[0m"
+    read -r choice
+
+    CONFIG="$HOME/.config/rocket/appearance.conf"
+    mkdir -p "$(dirname "$CONFIG")"
+
+    case "$choice" in
+        1) sed -i 's/corner_radius=.*/corner_radius=0/' "$CONFIG" 2>/dev/null || echo "corner_radius=0" >> "$CONFIG" ;;
+        2) sed -i 's/corner_radius=.*/corner_radius=4/' "$CONFIG" 2>/dev/null || echo "corner_radius=4" >> "$CONFIG" ;;
+        3) sed -i 's/corner_radius=.*/corner_radius=8/' "$CONFIG" 2>/dev/null || echo "corner_radius=8" >> "$CONFIG" ;;
+        4) sed -i 's/corner_radius=.*/corner_radius=12/' "$CONFIG" 2>/dev/null || echo "corner_radius=12" >> "$CONFIG" ;;
+        5) sed -i 's/corner_radius=.*/corner_radius=16/' "$CONFIG" 2>/dev/null || echo "corner_radius=16" >> "$CONFIG" ;;
+        0) return ;;
+        *) echo "Invalid"; change_corners ;;
+    esac
+    echo "Corners updated"
+}
+
+change_colors() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║        Configure Colors           ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Cyan (default)"
+    echo -e "  \033[0;32m2)\033[0m Purple"
+    echo -e "  \033[0;32m3)\033[0m Green"
+    echo -e "  \033[0;32m4)\033[0m Orange"
+    echo -e "  \033[0;32m5)\033[0m Pink"
+    echo -e "  \033[0;32m0)\033[0m Cancel"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-5]: \033[0m"
+    read -r choice
+
+    CONFIG="$HOME/.config/rocket/appearance.conf"
+    mkdir -p "$(dirname "$CONFIG")"
+
+    case "$choice" in
+        1) sed -i 's/accent_color=.*/accent_color=#00d4ff/' "$CONFIG" 2>/dev/null || echo "accent_color=#00d4ff" >> "$CONFIG" ;;
+        2) sed -i 's/accent_color=.*/accent_color=#ff00ff/' "$CONFIG" 2>/dev/null || echo "accent_color=#ff00ff" >> "$CONFIG" ;;
+        3) sed -i 's/accent_color=.*/accent_color=#00ff88/' "$CONFIG" 2>/dev/null || echo "accent_color=#00ff88" >> "$CONFIG" ;;
+        4) sed -i 's/accent_color=.*/accent_color=#ff8800/' "$CONFIG" 2>/dev/null || echo "accent_color=#ff8800" >> "$CONFIG" ;;
+        5) sed -i 's/accent_color=.*/accent_color=#ff00aa/' "$CONFIG" 2>/dev/null || echo "accent_color=#ff00aa" >> "$CONFIG" ;;
+        0) return ;;
+        *) echo "Invalid"; change_colors ;;
+    esac
+    echo "Colors updated"
+}
+
+configure_input() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║      Configure Input Devices      ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m List input devices"
+    echo -e "  \033[0;32m2)\033[0m View current settings"
+    echo -e "  \033[0;32m3)\033[0m Test mouse/keyboard"
+    echo -e "  \033[0;32m0)\033[0m Cancel"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-3]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1)
+            echo ""
+            echo "Input devices:"
+            lsinput 2>/dev/null || echo "lsinput not available"
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            configure_input
+            ;;
+        2)
+            echo ""
+            echo "Current input settings:"
+            kreadconfig5 --group Mouse 2>/dev/null || echo "No mouse config found"
+            echo ""
+            kreadconfig5 --group Keyboard 2>/dev/null || echo "No keyboard config found"
+            echo ""
+            echo -ne "Press Enter to continue..."
+            read -r
+            configure_input
+            ;;
+        3)
+            echo "Testing input devices..."
+            echo "Press keys or move mouse to test..."
+            cat /dev/input/event* 2>/dev/null | head -c 100 || echo "Cannot read input devices"
+            ;;
+        0) return ;;
+        *) echo "Invalid"; configure_input ;;
+    esac
+}
+
+# Main
+case "${1:-}" in
+    --settings) open_settings_gui ;;
+    --theme) change_theme ;;
+    --wallpaper) change_wallpaper ;;
+    --font) change_font ;;
+    --corners) change_corners ;;
+    --colors) change_colors ;;
+    --input) configure_input ;;
+    --help|-h) show_help ;;
+    "") show_help ;;
+    *) echo "Unknown option: $1"; show_help; exit 1 ;;
+esac

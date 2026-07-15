@@ -1,0 +1,188 @@
+#!/bin/bash
+# rocket-trigger - Utilities for Rocket Desktop
+
+show_main_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Utilities & Actions         ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m 📷 Screenshot"
+    echo -e "  \033[0;32m2)\033[0m 🎥 Screen Record"
+    echo -e "  \033[0;32m3)\033[0m 🎨 Color Picker"
+    echo -e "  \033[0;32m4)\033[0m 📋 Clipboard"
+    echo -e "  \033[0;32m5)\033[0m ⏱️  Timer"
+    echo -e "  \033[0;32m6)\033[0m 📤 Share (localsend)"
+    echo -e "  \033[0;32m7)\033[0m 🖥️  Window Info"
+    echo -e "  \033[0;32m8)\033[0m 📊 System Info"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-8]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) show_screenshot_menu ;;
+        2) show_record_menu ;;
+        3) show_color_picker ;;
+        4) show_clipboard_menu ;;
+        5) show_timer_menu ;;
+        6) show_share_menu ;;
+        7) show_window_info ;;
+        8) show_system_info ;;
+        0) return ;;
+        *) show_main_menu ;;
+    esac
+    show_main_menu
+}
+
+show_screenshot_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Screenshot                  ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Full Screen"
+    echo -e "  \033[0;32m2)\033[0m Region Select"
+    echo -e "  \033[0;32m3)\033[0m Current Window"
+    echo -e "  \033[0;32m4)\033[0m Delayed (5s)"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-4]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) grim ~/screenshot-$(date +%Y%m%d-%H%M%S).png && echo "Screenshot saved!" ;;
+        2) grim -g "$(slurp)" ~/screenshot-$(date +%Y%m%d-%H%M%S).png && echo "Screenshot saved!" ;;
+        3) grim -g "$(slurp -d)" ~/screenshot-$(date +%Y%m%d-%H%M%S).png && echo "Screenshot saved!" ;;
+        4) sleep 5 && grim ~/screenshot-$(date +%Y%m%d-%H%M%S).png && echo "Screenshot saved!" ;;
+        0) return ;;
+        *) show_screenshot_menu ;;
+    esac
+    show_screenshot_menu
+}
+
+show_record_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Screen Recording            ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Record Full Screen"
+    echo -e "  \033[0;32m2)\033[0m Record Region"
+    echo -e "  \033[0;32m3)\033[0m Record with Audio"
+    echo -e "  \033[0;32m4)\033[0m Stop Recording"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-4]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) echo "Recording... Press Ctrl+C to stop" && wf-recorder -f ~/recording-$(date +%Y%m%d-%H%M%S).mp4 ;;
+        2) wf-recorder -g "$(slurp)" -f ~/recording-$(date +%Y%m%d-%H%M%S).mp4 ;;
+        3) wf-recorder -f ~/recording-$(date +%Y%m%d-%H%M%S).mp4 --audio ;;
+        4) pkill wf-recorder && echo "Recording stopped" ;;
+        0) return ;;
+        *) show_record_menu ;;
+    esac
+    show_record_menu
+}
+
+show_color_picker() {
+    if command -v hyprpicker &>/dev/null; then
+        hyprpicker -a
+        echo "Color copied to clipboard!"
+    else
+        echo "hyprpicker not found. Install: yay -S hyprpicker"
+    fi
+}
+
+show_clipboard_menu() {
+    if command -v cliphist &>/dev/null; then
+        cliphist list | wofi --dmenu | cliphist decode | wl-copy
+    elif command -v wl-paste &>/dev/null; then
+        wl-paste | wofi --dmenu | wl-copy
+    else
+        echo "Clipboard tools not found. Install: sudo pacman -S cliphist wofi"
+    fi
+}
+
+show_timer_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Timer                       ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m 1 minute"
+    echo -e "  \033[0;32m2)\033[0m 5 minutes"
+    echo -e "  \033[0;32m3)\033[0m 10 minutes"
+    echo -e "  \033[0;32m4)\033[0m 15 minutes"
+    echo -e "  \033[0;32m5)\033[0m 30 minutes"
+    echo -e "  \033[0;32m6)\033[0m Custom"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-6]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) sleep 60 && notify-send "Timer" "1 minute is up!" ;;
+        2) sleep 300 && notify-send "Timer" "5 minutes is up!" ;;
+        3) sleep 600 && notify-send "Timer" "10 minutes is up!" ;;
+        4) sleep 900 && notify-send "Timer" "15 minutes is up!" ;;
+        5) sleep 1800 && notify-send "Timer" "30 minutes is up!" ;;
+        6)
+            echo -ne "Minutes: "
+            read -r mins
+            if [[ $mins =~ ^[0-9]+$ ]]; then
+                sleep $((mins * 60)) && notify-send "Timer" "$mins minutes is up!"
+            fi
+            ;;
+        0) return ;;
+        *) show_timer_menu ;;
+    esac
+    show_timer_menu
+}
+
+show_share_menu() {
+    if command -v localsend &>/dev/null; then
+        localsend
+    else
+        echo "localsend not found. Install: yay -S localsend-bin"
+    fi
+}
+
+show_window_info() {
+    if command -v xprop &>/dev/null; then
+        xprop | head -20
+    else
+        echo "xprop not found"
+    fi
+}
+
+show_system_info() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       System Information          ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo "  OS: $(cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2)"
+    echo "  Kernel: $(uname -r)"
+    echo "  CPU: $(lscpu | grep 'Model name' | cut -d':' -f2 | xargs)"
+    echo "  Memory: $(free -h | awk '/Mem:/ {print $2}') total, $(free -h | awk '/Mem:/ {print $3}') used"
+    echo "  Disk: $(df -h / | awk 'NR==2 {print $2 " total, " $3 " used"}')"
+    echo "  Uptime: $(uptime -p)"
+    echo ""
+    echo -ne "Press Enter to continue..."
+    read -r
+}
+
+show_main_menu

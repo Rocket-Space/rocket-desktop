@@ -1,0 +1,475 @@
+#!/bin/bash
+# rocket-install - App installer for Rocket Desktop
+
+BACK_TO_EXIT=false
+
+pkg_install() {
+    local pkg="$1"
+    if ! pacman -Q "$pkg" &>/dev/null; then
+        echo "Installing $pkg..."
+        sudo pacman -S --noconfirm --needed "$pkg"
+    else
+        echo "$pkg is already installed"
+    fi
+}
+
+aur_install() {
+    local pkg="$1"
+    if ! pacman -Q "$pkg" &>/dev/null; then
+        echo "Installing $pkg from AUR..."
+        yay -S --noconfirm --needed "$pkg"
+    else
+        echo "$pkg is already installed"
+    fi
+}
+
+present_terminal() {
+    kitty -e bash -c "$1" 2>/dev/null || alacritty -e bash -c "$1" 2>/dev/null || foot bash -c "$1" 2>/dev/null || xdg-terminal-exec -- bash -c "$1" 2>/dev/null
+}
+
+back_to() {
+    local parent_menu="$1"
+    if [[ $BACK_TO_EXIT == "true" ]]; then
+        exit 0
+    elif [[ -n $parent_menu ]]; then
+        "$parent_menu"
+    else
+        show_main_menu
+    fi
+}
+
+show_main_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Install Applications        ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m  📦 Package     \033[0;37m- Install any package\033[0m"
+    echo -e "  \033[0;32m2)\033[0m  🌐 Browser      \033[0;37m- Web browsers\033[0m"
+    echo -e "  \033[0;32m3)\033[0m  ✏️  Editor       \033[0;37m- Code editors\033[0m"
+    echo -e "  \033[0;32m4)\033[0m  💻 Terminal     \033[0;37m- Terminal emulators\033[0m"
+    echo -e "  \033[0;32m5)\033[0m  🎮 Gaming       \033[0;37m- Games & gaming tools\033[0m"
+    echo -e "  \033[0;32m6)\033[0m  🔧 Development  \033[0;37m- Programming tools\033[0m"
+    echo -e "  \033[0;32m7)\033[0m  🤖 AI           \033[0;37m- AI tools\033[0m"
+    echo -e "  \033[0;32m8)\033[0m  🔤 Font         \033[0;37m- Fonts\033[0m"
+    echo -e "  \033[0;32m9)\033[0m  🎨 Style        \033[0;37m- Themes & styles\033[0m"
+    echo -e "  \033[0;32m10)\033[0m 📱 TUI          \033[0;37m- Terminal UI apps\033[0m"
+    echo -e "  \033[0;32m11)\033[0m 🔌 Service      \033[0;37m- System services\033[0m"
+    echo -e "  \033[0;32m12)\033[0m 🪟 Windows      \033[0;37m- Wine/VM/compatibility\033[0m"
+    echo -e "  \033[0;32m0)\033[0m  Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-12]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) show_package_menu ;;
+        2) show_browser_menu ;;
+        3) show_editor_menu ;;
+        4) show_terminal_menu ;;
+        5) show_gaming_menu ;;
+        6) show_development_menu ;;
+        7) show_ai_menu ;;
+        8) show_font_menu ;;
+        9) show_style_menu ;;
+        10) show_tui_menu ;;
+        11) show_service_menu ;;
+        12) show_windows_menu ;;
+        0) return ;;
+        *) show_main_menu ;;
+    esac
+}
+
+show_package_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Install Package             ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -ne "  \033[0;36mEnter package name: \033[0m"
+    read -r pkg
+    if [ -n "$pkg" ]; then
+        present_terminal "sudo pacman -S --needed $pkg"
+    fi
+    back_to show_main_menu
+}
+
+show_browser_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Install Browser             ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Firefox"
+    echo -e "  \033[0;32m2)\033[0m Chromium"
+    echo -e "  \033[0;32m3)\033[0m Brave"
+    echo -e "  \033[0;32m4)\033[0m Zen Browser"
+    echo -e "  \033[0;32m5)\033[0m Vivaldi"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-5]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "sudo pacman -S --needed firefox && echo 'Firefox installed!' || echo 'Failed'" ;;
+        2) present_terminal "sudo pacman -S --needed chromium && echo 'Chromium installed!' || echo 'Failed'" ;;
+        3) present_terminal "yay -S --needed brave-bin && echo 'Brave installed!' || echo 'Failed'" ;;
+        4) present_terminal "yay -S --needed zen-browser-bin && echo 'Zen installed!' || echo 'Failed'" ;;
+        5) present_terminal "yay -S --needed vivaldi && echo 'Vivaldi installed!' || echo 'Failed'" ;;
+        0) back_to show_main_menu ;;
+        *) show_browser_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+show_editor_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Install Editor              ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m VSCode"
+    echo -e "  \033[0;32m2)\033[0m Cursor"
+    echo -e "  \033[0;32m3)\033[0m Zed"
+    echo -e "  \033[0;32m4)\033[0m Neovim"
+    echo -e "  \033[0;32m5)\033[0m Helix"
+    echo -e "  \033[0;32m6)\033[0m Vim"
+    echo -e "  \033[0;32m7)\033[0m Emacs"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-7]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "yay -S --needed visual-studio-code-bin && echo 'VSCode installed!' || echo 'Failed'" ;;
+        2) present_terminal "yay -S --needed cursor-bin && echo 'Cursor installed!' || echo 'Failed'" ;;
+        3) present_terminal "yay -S --needed zed && echo 'Zed installed!' || echo 'Failed'" ;;
+        4) present_terminal "sudo pacman -S --needed neovim && echo 'Neovim installed!' || echo 'Failed'" ;;
+        5) present_terminal "sudo pacman -S --needed helix && echo 'Helix installed!' || echo 'Failed'" ;;
+        6) present_terminal "sudo pacman -S --needed vim && echo 'Vim installed!' || echo 'Failed'" ;;
+        7) present_terminal "sudo pacman -S --needed emacs-wayland && echo 'Emacs installed!' || echo 'Failed'" ;;
+        0) back_to show_main_menu ;;
+        *) show_editor_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+show_terminal_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Install Terminal            ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Kitty"
+    echo -e "  \033[0;32m2)\033[0m Alacritty"
+    echo -e "  \033[0;32m3)\033[0m Ghostty"
+    echo -e "  \033[0;32m4)\033[0m Foot"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-4]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "sudo pacman -S --needed kitty && echo 'Kitty installed!' || echo 'Failed'" ;;
+        2) present_terminal "sudo pacman -S --needed alacritty && echo 'Alacritty installed!' || echo 'Failed'" ;;
+        3) present_terminal "yay -S --needed ghostty && echo 'Ghostty installed!' || echo 'Failed'" ;;
+        4) present_terminal "sudo pacman -S --needed foot && echo 'Foot installed!' || echo 'Failed'" ;;
+        0) back_to show_main_menu ;;
+        *) show_terminal_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+show_gaming_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Install Gaming              ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Steam"
+    echo -e "  \033[0;32m2)\033[0m Lutris"
+    echo -e "  \033[0;32m3)\033[0m Heroic Games Launcher"
+    echo -e "  \033[0;32m4)\033[0m RetroArch"
+    echo -e "  \033[0;32m5)\033[0m Minecraft"
+    echo -e "  \033[0;32m6)\033[0m Xbox Controller (xone)"
+    echo -e "  \033[0;32m7)\033[0m Moonlight"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-7]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "sudo pacman -S --needed steam && echo 'Steam installed!' || echo 'Failed'" ;;
+        2) present_terminal "sudo pacman -S --needed lutris && echo 'Lutris installed!' || echo 'Failed'" ;;
+        3) present_terminal "yay -S --needed heroic-games-launcher-bin && echo 'Heroic installed!' || echo 'Failed'" ;;
+        4) present_terminal "sudo pacman -S --needed retroarch && echo 'RetroArch installed!' || echo 'Failed'" ;;
+        5) present_terminal "yay -S --needed minecraft-launcher && echo 'Minecraft installed!' || echo 'Failed'" ;;
+        6) present_terminal "yay -S --needed xone-dkms && echo 'Xbox controller installed!' || echo 'Failed'" ;;
+        7) present_terminal "sudo pacman -S --needed moonlight-qt && echo 'Moonlight installed!' || echo 'Failed'" ;;
+        0) back_to show_main_menu ;;
+        *) show_gaming_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+show_development_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Install Development         ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Base Development (gcc, make, etc)"
+    echo -e "  \033[0;32m2)\033[0m Docker"
+    echo -e "  \033[0;32m3)\033[0m Node.js + npm"
+    echo -e "  \033[0;32m4)\033[0m Python"
+    echo -e "  \033[0;32m5)\033[0m Go"
+    echo -e "  \033[0;32m6)\033[0m Rust"
+    echo -e "  \033[0;32m7)\033[0m Java (JDK)"
+    echo -e "  \033[0;32m8)\033[0m .NET SDK"
+    echo -e "  \033[0;32m9)\033[0m PHP"
+    echo -e "  \033[0;32m10)\033[0m Ruby"
+    echo -e "  \033[0;32m11)\033[0m Zig"
+    echo -e "  \033[0;32m12)\033[0m Elixir"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-12]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "sudo pacman -S --needed base-devel git && echo 'Base dev installed!' || echo 'Failed'" ;;
+        2) present_terminal "sudo pacman -S --needed docker && sudo systemctl enable --now docker && echo 'Docker installed!' || echo 'Failed'" ;;
+        3) present_terminal "sudo pacman -S --needed nodejs npm && echo 'Node.js installed!' || echo 'Failed'" ;;
+        4) present_terminal "sudo pacman -S --needed python python-pip && echo 'Python installed!' || echo 'Failed'" ;;
+        5) present_terminal "sudo pacman -S --needed go && echo 'Go installed!' || echo 'Failed'" ;;
+        6) present_terminal "sudo pacman -S --needed rust && echo 'Rust installed!' || echo 'Failed'" ;;
+        7) present_terminal "sudo pacman -S --needed jdk-openjdk && echo 'Java installed!' || echo 'Failed'" ;;
+        8) present_terminal "sudo pacman -S --needed dotnet-sdk && echo '.NET installed!' || echo 'Failed'" ;;
+        9) present_terminal "sudo pacman -S --needed php && echo 'PHP installed!' || echo 'Failed'" ;;
+        10) present_terminal "sudo pacman -S --needed ruby && echo 'Ruby installed!' || echo 'Failed'" ;;
+        11) present_terminal "sudo pacman -S --needed zig && echo 'Zig installed!' || echo 'Failed'" ;;
+        12) present_terminal "sudo pacman -S --needed elixir && echo 'Elixir installed!' || echo 'Failed'" ;;
+        0) back_to show_main_menu ;;
+        *) show_development_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+show_ai_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Install AI Tools            ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Ollama"
+    echo -e "  \033[0;32m2)\033[0m LM Studio"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-2]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "yay -S --needed ollama && echo 'Ollama installed!' || echo 'Failed'" ;;
+        2) present_terminal "yay -S --needed lmstudio-bin && echo 'LM Studio installed!' || echo 'Failed'" ;;
+        0) back_to show_main_menu ;;
+        *) show_ai_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+show_font_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Install Fonts               ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Cascadia Code Nerd"
+    echo -e "  \033[0;32m2)\033[0m Fira Code Nerd"
+    echo -e "  \033[0;32m3)\033[0m Iosevka Nerd"
+    echo -e "  \033[0;32m4)\033[0m JetBrains Mono Nerd"
+    echo -e "  \033[0;32m5)\033[0m Victor Mono Nerd"
+    echo -e "  \033[0;32m6)\033[0m Noto Sans (complete)"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-6]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "sudo pacman -S --needed ttf-cascadia-code-nerd && echo 'Cascadia installed!' || echo 'Failed'" ;;
+        2) present_terminal "sudo pacman -S --needed ttf-firacode-nerd && echo 'Fira Code installed!' || echo 'Failed'" ;;
+        3) present_terminal "sudo pacman -S --needed ttf-iosevka-nerd && echo 'Iosevka installed!' || echo 'Failed'" ;;
+        4) present_terminal "sudo pacman -S --needed ttf-jetbrains-mono-nerd && echo 'JetBrains installed!' || echo 'Failed'" ;;
+        5) present_terminal "sudo pacman -S --needed ttf-victor-mono-nerd && echo 'Victor Mono installed!' || echo 'Failed'" ;;
+        6) present_terminal "sudo pacman -S --needed noto-fonts && echo 'Noto Sans installed!' || echo 'Failed'" ;;
+        0) back_to show_main_menu ;;
+        *) show_font_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+show_style_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Install Style               ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m GTK Theme"
+    echo -e "  \033[0;32m2)\033[0m Icon Theme"
+    echo -e "  \033[0;32m3)\033[0m Cursor Theme"
+    echo -e "  \033[0;32m4)\033[0m Wallpaper Pack"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-4]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "sudo pacman -S --needed arc-gtk-theme && echo 'Arc theme installed!' || echo 'Failed'" ;;
+        2) present_terminal "sudo pacman -S --needed papirus-icon-theme && echo 'Papirus icons installed!' || echo 'Failed'" ;;
+        3) present_terminal "sudo pacman -S --needed xcursor-breeze && echo 'Breeze cursor installed!' || echo 'Failed'" ;;
+        4) present_terminal "sudo pacman -S --needed art-wallpapers && echo 'Wallpapers installed!' || echo 'Failed'" ;;
+        0) back_to show_main_menu ;;
+        *) show_style_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+show_tui_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Install TUI Apps            ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m btop (System Monitor)"
+    echo -e "  \033[0;32m2)\033[0m htop"
+    echo -e "  \033[0;32m3)\033[0m ranger (File Manager)"
+    echo -e "  \033[0;32m4)\033[0m yazi (File Manager)"
+    echo -e "  \033[0;32m5)\033[0m lazygit"
+    echo -e "  \033[0;32m6)\033[0m nmtui (WiFi)"
+    echo -e "  \033[0;32m7)\033[0m bottom (btm)"
+    echo -e "  \033[0;32m8)\033[0m dust (Disk Usage)"
+    echo -e "  \033[0;32m9)\033[0m duf (Disk Free)"
+    echo -e "  \033[0;32m10)\033[0m gitui"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-10]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "sudo pacman -S --needed btop && echo 'btop installed!' || echo 'Failed'" ;;
+        2) present_terminal "sudo pacman -S --needed htop && echo 'htop installed!' || echo 'Failed'" ;;
+        3) present_terminal "sudo pacman -S --needed ranger && echo 'ranger installed!' || echo 'Failed'" ;;
+        4) present_terminal "yay -S --needed yazi && echo 'yazi installed!' || echo 'Failed'" ;;
+        5) present_terminal "sudo pacman -S --needed lazygit && echo 'lazygit installed!' || echo 'Failed'" ;;
+        6) present_terminal "sudo pacman -S --needed networkmanager && echo 'nmtui installed!' || echo 'Failed'" ;;
+        7) present_terminal "yay -S --needed bottom && echo 'btm installed!' || echo 'Failed'" ;;
+        8) present_terminal "yay -S --needed dust && echo 'dust installed!' || echo 'Failed'" ;;
+        9) present_terminal "yay -S --needed duf && echo 'duf installed!' || echo 'Failed'" ;;
+        10) present_terminal "yay -S --needed gitui && echo 'gitui installed!' || echo 'Failed'" ;;
+        0) back_to show_main_menu ;;
+        *) show_tui_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+show_service_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Install Services            ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Tailscale (VPN)"
+    echo -e "  \033[0;32m2)\033[0m Docker"
+    echo -e "  \033[0;32m3)\033[0m Bluetooth"
+    echo -e "  \033[0;32m4)\033[0m SSH Server"
+    echo -e "  \033[0;32m5)\033[0m Apache/Nginx"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-5]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "sudo pacman -S --needed tailscale && sudo systemctl enable --now tailscaled && echo 'Tailscale installed!' || echo 'Failed'" ;;
+        2) present_terminal "sudo pacman -S --needed docker && sudo systemctl enable --now docker && echo 'Docker installed!' || echo 'Failed'" ;;
+        3) present_terminal "sudo pacman -S --needed bluez bluez-utils && sudo systemctl enable --now bluetooth && echo 'Bluetooth installed!' || echo 'Failed'" ;;
+        4) present_terminal "sudo pacman -S --needed openssh && sudo systemctl enable --now sshd && echo 'SSH installed!' || echo 'Failed'" ;;
+        5) present_terminal "sudo pacman -S --needed nginx && sudo systemctl enable --now nginx && echo 'Nginx installed!' || echo 'Failed'" ;;
+        0) back_to show_main_menu ;;
+        *) show_service_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+show_windows_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Install Windows Tools       ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Wine"
+    echo -e "  \033[0;32m2)\033[0m Proton GE"
+    echo -e "  \033[0;32m3)\033[0m Bottles"
+    echo -e "  \033[0;32m4)\033[0m QEMU/KVM"
+    echo -e "  \033[0;32m5)\033[0m VirtualBox"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-5]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "sudo pacman -S --needed wine && echo 'Wine installed!' || echo 'Failed'" ;;
+        2) present_terminal "yay -S --needed proton-ge-custom-bin && echo 'Proton GE installed!' || echo 'Failed'" ;;
+        3) present_terminal "yay -S --needed bottles && echo 'Bottles installed!' || echo 'Failed'" ;;
+        4) present_terminal "sudo pacman -S --needed qemu-full virt-manager && echo 'QEMU/KVM installed!' || echo 'Failed'" ;;
+        5) present_terminal "sudo pacman -S --needed virtualbox && echo 'VirtualBox installed!' || echo 'Failed'" ;;
+        0) back_to show_main_menu ;;
+        *) show_windows_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+# Entry point
+if [[ "$1" == "--direct" ]]; then
+    BACK_TO_EXIT=true
+    shift
+    case "${1:-}" in
+        package) show_package_menu ;;
+        browser) show_browser_menu ;;
+        editor) show_editor_menu ;;
+        terminal) show_terminal_menu ;;
+        gaming) show_gaming_menu ;;
+        development) show_development_menu ;;
+        ai) show_ai_menu ;;
+        font) show_font_menu ;;
+        style) show_style_menu ;;
+        tui) show_tui_menu ;;
+        service) show_service_menu ;;
+        windows) show_windows_menu ;;
+        *) show_main_menu ;;
+    esac
+else
+    show_main_menu
+fi

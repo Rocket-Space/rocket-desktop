@@ -1,0 +1,251 @@
+#!/bin/bash
+# rocket-setup - System settings for Rocket Desktop
+
+show_main_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       System Settings             ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m 🔊 Audio"
+    echo -e "  \033[0;32m2)\033[0m 📶 WiFi"
+    echo -e "  \033[0;32m3)\033[0m 📱 Bluetooth"
+    echo -e "  \033[0;32m4)\033[0m ⚡ Power Profile"
+    echo -e "  \033[0;32m5)\033[0m 🖥️  Monitors"
+    echo -e "  \033[0;32m6)\033[0m ⌨️  Input Devices"
+    echo -e "  \033[0;32m7)\033[0m 🌐 DNS"
+    echo -e "  \033[0;32m8)\033[0m 🔥 Firewall"
+    echo -e "  \033[0;32m9)\033[0m 🚫 Sleep/Hibernate"
+    echo -e "  \033[0;32m10)\033[0m 🔒 Security"
+    echo -e "  \033[0;32m11)\033[0m ⚙️  Config Files"
+    echo -e "  \033[0;32m12)\033[0m 🔄 Restore Defaults"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-12]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) rocket-tui-audio ;;
+        2) rocket-tui-wifi ;;
+        3) rocket-tui-bluetooth ;;
+        4) show_power_menu ;;
+        5) arandr 2>/dev/null || nvidia-settings 2>/dev/null || echo "No display config tool found" ;;
+        6) rocket-settings --input ;;
+        7) show_dns_menu ;;
+        8) show_firewall_menu ;;
+        9) show_sleep_menu ;;
+        10) show_security_menu ;;
+        11) show_config_menu ;;
+        12) show_defaults_menu ;;
+        0) return ;;
+        *) show_main_menu ;;
+    esac
+    show_main_menu
+}
+
+show_power_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Power Profile               ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo "  Current: $(powerprofilesctl get 2>/dev/null || echo 'unknown')"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Balanced"
+    echo -e "  \033[0;32m2)\033[0m Performance"
+    echo -e "  \033[0;32m3)\033[0m Power Saver"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-3]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) powerprofilesctl set balanced && echo "Set to Balanced" ;;
+        2) powerprofilesctl set performance && echo "Set to Performance" ;;
+        3) powerprofilesctl set power-saver && echo "Set to Power Saver" ;;
+        0) return ;;
+        *) show_power_menu ;;
+    esac
+    show_power_menu
+}
+
+show_dns_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       DNS Settings                ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo "  Current DNS:"
+    resolvectl status 2>/dev/null | grep -A5 "DNS Servers" || echo "Cannot read DNS"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Cloudflare (1.1.1.1)"
+    echo -e "  \033[0;32m2)\033[0m Google (8.8.8.8)"
+    echo -e "  \033[0;32m3)\033[0m Quad9 (9.9.9.9)"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-3]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf > /dev/null && echo "DNS set to Cloudflare" ;;
+        2) echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null && echo "DNS set to Google" ;;
+        3) echo "nameserver 9.9.9.9" | sudo tee /etc/resolv.conf > /dev/null && echo "DNS set to Quad9" ;;
+        0) return ;;
+        *) show_dns_menu ;;
+    esac
+    show_dns_menu
+}
+
+show_firewall_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Firewall Settings           ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo "  Status: $(sudo ufw status 2>/dev/null | head -1 || echo 'UFW not installed')"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Enable Firewall"
+    echo -e "  \033[0;32m2)\033[0m Disable Firewall"
+    echo -e "  \033[0;32m3)\033[0m Show Rules"
+    echo -e "  \033[0;32m4)\033[0m Allow SSH"
+    echo -e "  \033[0;32m5)\033[0m Allow HTTP"
+    echo -e "  \033[0;32m6)\033[0m Allow HTTPS"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-6]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) sudo ufw enable ;;
+        2) sudo ufw disable ;;
+        3) sudo ufw status ;;
+        4) sudo ufw allow ssh ;;
+        5) sudo ufw allow http ;;
+        6) sudo ufw allow https ;;
+        0) return ;;
+        *) show_firewall_menu ;;
+    esac
+    show_firewall_menu
+}
+
+show_sleep_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Sleep/Hibernate Settings    ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Enable Sleep"
+    echo -e "  \033[0;32m2)\033[0m Disable Sleep"
+    echo -e "  \033[0;32m3)\033[0m Enable Hibernate"
+    echo -e "  \033[0;32m4)\033[0m Disable Hibernate"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-4]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) sudo systemctl mask sleep.target suspend.target hibernate.target 2>/dev/null && echo "Sleep enabled" ;;
+        2) sudo systemctl unmask sleep.target suspend.target 2>/dev/null && echo "Sleep disabled" ;;
+        3) sudo systemctl enable hibernate.target 2>/dev/null && echo "Hibernate enabled" ;;
+        4) sudo systemctl disable hibernate.target 2>/dev/null && echo "Hibernate disabled" ;;
+        0) return ;;
+        *) show_sleep_menu ;;
+    esac
+    show_sleep_menu
+}
+
+show_security_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Security Settings           ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Fingerprint Auth"
+    echo -e "  \033[0;32m2)\033[0m FIDO2/WebAuthn"
+    echo -e "  \033[0;32m3)\033[0m SSH Keys"
+    echo -e "  \033[0;32m4)\033[0m Passwordless Sudo"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-4]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) echo "Install fprintd: sudo pacman -S fprintd" ;;
+        2) echo "Install libfido2: sudo pacman -S libfido2" ;;
+        3) ssh-keygen -t ed25519 -C "rocket@rocket-desktop" ;;
+        4) echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee "/etc/sudoers.d/$USER" > /dev/null && echo "Passwordless sudo enabled" ;;
+        0) return ;;
+        *) show_security_menu ;;
+    esac
+    show_security_menu
+}
+
+show_config_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Config Files                ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Rocket Config"
+    echo -e "  \033[0;32m2)\033[0m Appearance Config"
+    echo -e "  \033[0;32m3)\033[0m KWin Config"
+    echo -e "  \033[0;32m4)\033[0m Shortcuts Config"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-4]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) kate ~/.config/rocket/rocket.conf 2>/dev/null || nano ~/.config/rocket/rocket.conf ;;
+        2) kate ~/.config/rocket/appearance.conf 2>/dev/null || nano ~/.config/rocket/appearance.conf ;;
+        3) kate ~/.config/kwinrc 2>/dev/null || nano ~/.config/kwinrc ;;
+        4) kate ~/.config/rocket/keybinds.txt 2>/dev/null || nano ~/.config/rocket/keybinds.txt ;;
+        0) return ;;
+        *) show_config_menu ;;
+    esac
+    show_config_menu
+}
+
+show_defaults_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Restore Defaults            ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[1;33mWarning: This will reset all settings!\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Restore Appearance"
+    echo -e "  \033[0;32m2)\033[0m Restore KWin Config"
+    echo -e "  \033[0;32m3)\033[0m Restore All"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-3]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) cp /usr/share/rocket-desktop/config/default/appearance.conf ~/.config/rocket/ 2>/dev/null && echo "Appearance restored" ;;
+        2) cp /usr/share/rocket-desktop/config/default/kwinrc ~/.config/kwinrc 2>/dev/null && echo "KWin config restored" ;;
+        3) cp /usr/share/rocket-desktop/config/default/* ~/.config/rocket/ 2>/dev/null && echo "All config restored" ;;
+        0) return ;;
+        *) show_defaults_menu ;;
+    esac
+    show_defaults_menu
+}
+
+show_main_menu

@@ -1,0 +1,254 @@
+#!/bin/bash
+# rocket-remove - Package remover for Rocket Desktop
+
+present_terminal() {
+    kitty -e bash -c "$1" 2>/dev/null || alacritty -e bash -c "$1" 2>/dev/null || foot bash -c "$1" 2>/dev/null || xdg-terminal-exec -- bash -c "$1" 2>/dev/null
+}
+
+back_to() {
+    local parent_menu="$1"
+    if [[ "${1:-}" == "exit" ]]; then
+        exit 0
+    elif [[ -n $parent_menu ]]; then
+        "$parent_menu"
+    else
+        show_main_menu
+    fi
+}
+
+show_main_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Remove Applications         ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m 📦 Package        \033[0;37m- Remove any package\033[0m"
+    echo -e "  \033[0;32m2)\033[0m 🧹 Orphans        \033[0;37m- Remove orphan packages\033[0m"
+    echo -e "  \033[0;32m3)\033[0m 💾 Cache          \033[0;37m- Clean package cache\033[0m"
+    echo -e "  \033[0;32m4)\033[0m 🌐 Browser        \033[0;37m- Remove browsers\033[0m"
+    echo -e "  \033[0;32m5)\033[0m ✏️  Editor         \033[0;37m- Remove editors\033[0m"
+    echo -e "  \033[0;32m6)\033[0m 🎮 Gaming         \033[0;37m- Remove gaming tools\033[0m"
+    echo -e "  \033[0;32m7)\033[0m 🔧 Development    \033[0;37m- Remove dev tools\033[0m"
+    echo -e "  \033[0;32m8)\033[0m 🔤 Font           \033[0;37m- Remove fonts\033[0m"
+    echo -e "  \033[0;32m9)\033[0m 🎨 Style          \033[0;37m- Remove themes\033[0m"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-9]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) show_package_menu ;;
+        2) present_terminal "sudo pacman -Rns \$(pacman -Qdtq) 2>/dev/null && echo 'Orphans removed!' || echo 'No orphans found'" ;;
+        3) present_terminal "sudo paccache -r && echo 'Cache cleaned!'" ;;
+        4) show_browser_menu ;;
+        5) show_editor_menu ;;
+        6) show_gaming_menu ;;
+        7) show_development_menu ;;
+        8) show_font_menu ;;
+        9) show_style_menu ;;
+        0) return ;;
+        *) show_main_menu ;;
+    esac
+}
+
+show_package_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Remove Package              ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -ne "  \033[0;36mEnter package name: \033[0m"
+    read -r pkg
+    if [ -n "$pkg" ]; then
+        present_terminal "sudo pacman -Rns $pkg && echo '$pkg removed!' || echo 'Failed'"
+    fi
+    back_to show_main_menu
+}
+
+show_browser_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Remove Browser              ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Firefox"
+    echo -e "  \033[0;32m2)\033[0m Chromium"
+    echo -e "  \033[0;32m3)\033[0m Brave"
+    echo -e "  \033[0;32m4)\033[0m Zen Browser"
+    echo -e "  \033[0;32m5)\033[0m Vivaldi"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-5]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "sudo pacman -Rns firefox" ;;
+        2) present_terminal "sudo pacman -Rns chromium" ;;
+        3) present_terminal "sudo pacman -Rns brave-bin" ;;
+        4) present_terminal "sudo pacman -Rns zen-browser-bin" ;;
+        5) present_terminal "sudo pacman -Rns vivaldi" ;;
+        0) back_to show_main_menu ;;
+        *) show_browser_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+show_editor_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Remove Editor               ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m VSCode"
+    echo -e "  \033[0;32m2)\033[0m Cursor"
+    echo -e "  \033[0;32m3)\033[0m Zed"
+    echo -e "  \033[0;32m4)\033[0m Neovim"
+    echo -e "  \033[0;32m5)\033[0m Helix"
+    echo -e "  \033[0;32m6)\033[0m Vim"
+    echo -e "  \033[0;32m7)\033[0m Emacs"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-7]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "sudo pacman -Rns visual-studio-code-bin" ;;
+        2) present_terminal "sudo pacman -Rns cursor-bin" ;;
+        3) present_terminal "sudo pacman -Rns zed" ;;
+        4) present_terminal "sudo pacman -Rns neovim" ;;
+        5) present_terminal "sudo pacman -Rns helix" ;;
+        6) present_terminal "sudo pacman -Rns vim" ;;
+        7) present_terminal "sudo pacman -Rns emacs-wayland" ;;
+        0) back_to show_main_menu ;;
+        *) show_editor_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+show_gaming_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Remove Gaming               ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Steam"
+    echo -e "  \033[0;32m2)\033[0m Lutris"
+    echo -e "  \033[0;32m3)\033[0m Heroic"
+    echo -e "  \033[0;32m4)\033[0m RetroArch"
+    echo -e "  \033[0;32m5)\033[0m Minecraft"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-5]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "sudo pacman -Rns steam" ;;
+        2) present_terminal "sudo pacman -Rns lutris" ;;
+        3) present_terminal "sudo pacman -Rns heroic-games-launcher-bin" ;;
+        4) present_terminal "sudo pacman -Rns retroarch" ;;
+        5) present_terminal "sudo pacman -Rns minecraft-launcher" ;;
+        0) back_to show_main_menu ;;
+        *) show_gaming_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+show_development_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Remove Development          ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Docker"
+    echo -e "  \033[0;32m2)\033[0m Node.js"
+    echo -e "  \033[0;32m3)\033[0m Python"
+    echo -e "  \033[0;32m4)\033[0m Go"
+    echo -e "  \033[0;32m5)\033[0m Rust"
+    echo -e "  \033[0;32m6)\033[0m Java"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-6]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "sudo pacman -Rns docker" ;;
+        2) present_terminal "sudo pacman -Rns nodejs npm" ;;
+        3) present_terminal "sudo pacman -Rns python python-pip" ;;
+        4) present_terminal "sudo pacman -Rns go" ;;
+        5) present_terminal "sudo pacman -Rns rust" ;;
+        6) present_terminal "sudo pacman -Rns jdk-openjdk" ;;
+        0) back_to show_main_menu ;;
+        *) show_development_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+show_font_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Remove Fonts                ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Cascadia Code Nerd"
+    echo -e "  \033[0;32m2)\033[0m Fira Code Nerd"
+    echo -e "  \033[0;32m3)\033[0m Iosevka Nerd"
+    echo -e "  \033[0;32m4)\033[0m JetBrains Mono Nerd"
+    echo -e "  \033[0;32m5)\033[0m Victor Mono Nerd"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-5]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "sudo pacman -Rns ttf-cascadia-code-nerd" ;;
+        2) present_terminal "sudo pacman -Rns ttf-firacode-nerd" ;;
+        3) present_terminal "sudo pacman -Rns ttf-iosevka-nerd" ;;
+        4) present_terminal "sudo pacman -Rns ttf-jetbrains-mono-nerd" ;;
+        5) present_terminal "sudo pacman -Rns ttf-victor-mono-nerd" ;;
+        0) back_to show_main_menu ;;
+        *) show_font_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+show_style_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Remove Style                ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m GTK Theme"
+    echo -e "  \033[0;32m2)\033[0m Icon Theme"
+    echo -e "  \033[0;32m3)\033[0m Cursor Theme"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-3]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) present_terminal "sudo pacman -Rns arc-gtk-theme" ;;
+        2) present_terminal "sudo pacman -Rns papirus-icon-theme" ;;
+        3) present_terminal "sudo pacman -Rns xcursor-breeze" ;;
+        0) back_to show_main_menu ;;
+        *) show_style_menu ;;
+    esac
+    back_to show_main_menu
+}
+
+show_main_menu

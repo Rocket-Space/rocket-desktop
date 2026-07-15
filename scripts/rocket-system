@@ -1,0 +1,137 @@
+#!/bin/bash
+# rocket-system - System actions for Rocket Desktop
+
+show_main_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       System Actions              ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m 🔒 Lock Screen"
+    echo -e "  \033[0;32m2)\033[0m 🖥️  Screensaver"
+    echo -e "  \033[0;32m3)\033[0m 💤 Suspend"
+    echo -e "  \033[0;32m4)\033[0m 💾 Hibernate"
+    echo -e "  \033[0;32m5)\033[0m 🚪 Logout"
+    echo -e "  \033[0;32m6)\033[0m 🔄 Reboot"
+    echo -e "  \033[0;32m7)\033[0m ⏻  Shutdown"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-7]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) loginctl lock-session && echo "Screen locked" ;;
+        2) show_screensaver_menu ;;
+        3) systemctl suspend ;;
+        4) systemctl hibernate ;;
+        5) show_logout_menu ;;
+        6) show_reboot_menu ;;
+        7) show_shutdown_menu ;;
+        0) return ;;
+        *) show_main_menu ;;
+    esac
+    show_main_menu
+}
+
+show_screensaver_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Screensaver                 ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Activate Screensaver"
+    echo -e "  \033[0;32m2)\033[0m Set Timeout"
+    echo -e "  \033[0;32m0)\033[0m Back"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-2]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) xset s activate 2>/dev/null || echo "Screensaver not available" ;;
+        2)
+            echo -ne "Timeout (minutes): "
+            read -r timeout
+            if [[ $timeout =~ ^[0-9]+$ ]]; then
+                xset s $((timeout * 60)) 2>/dev/null || echo "Cannot set timeout"
+            fi
+            ;;
+        0) return ;;
+        *) show_screensaver_menu ;;
+    esac
+    show_screensaver_menu
+}
+
+show_logout_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Logout                      ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[1;33mAre you sure you want to logout?\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Yes, logout"
+    echo -e "  \033[0;32m0)\033[0m Cancel"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-1]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) loginctl terminate-user $USER ;;
+        0) return ;;
+        *) show_logout_menu ;;
+    esac
+}
+
+show_reboot_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Reboot                      ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[1;33mAre you sure you want to reboot?\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Yes, reboot"
+    echo -e "  \033[0;32m0)\033[0m Cancel"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-1]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) systemctl reboot ;;
+        0) return ;;
+        *) show_reboot_menu ;;
+    esac
+}
+
+show_shutdown_menu() {
+    clear
+    echo -e "\033[0;36m"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║       Shutdown                    ║"
+    echo "  ╚═══════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo ""
+    echo -e "  \033[1;33mAre you sure you want to shutdown?\033[0m"
+    echo ""
+    echo -e "  \033[0;32m1)\033[0m Yes, shutdown"
+    echo -e "  \033[0;32m0)\033[0m Cancel"
+    echo ""
+    echo -ne "  \033[0;36mChoose [0-1]: \033[0m"
+    read -r choice
+
+    case "$choice" in
+        1) shutdown now ;;
+        0) return ;;
+        *) show_shutdown_menu ;;
+    esac
+}
+
+show_main_menu
