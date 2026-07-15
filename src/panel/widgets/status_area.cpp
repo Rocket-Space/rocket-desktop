@@ -3,6 +3,7 @@
 #include <QProcess>
 #include <QDBusConnection>
 #include <QDBusInterface>
+#include <QRegularExpression>
 #include <QDBusReply>
 #include <QTextStream>
 
