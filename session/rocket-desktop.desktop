@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Rocket
 Comment=Wayland desktop environment
-Exec=/usr/bin/rocket-session
+Exec=/usr/bin/rocket-session --auto
 Type=Application
 DesktopNames=Rocket

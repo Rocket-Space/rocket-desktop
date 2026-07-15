@@ -185,10 +185,19 @@ except Exception as e:
 }
 
 # ── Entry point ────────────────────────────────────────────────────────────
-# Show menu if running from TTY (no display server)
-if [ -z "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ]; then
-    show_menu
-else
-    # Launched from SDDM or already in a session
+AUTO_LAUNCH=false
+for arg in "$@"; do
+    case "$arg" in
+        --auto|--launch) AUTO_LAUNCH=true ;;
+    esac
+done
+
+if [ "$AUTO_LAUNCH" = true ]; then
     launch_rocket
+elif [ -n "$WAYLAND_DISPLAY" ] || [ -n "$DISPLAY" ]; then
+    launch_rocket
+elif [ -n "$XDG_VTNR" ]; then
+    launch_rocket
+else
+    show_menu
 fi
