@@ -349,10 +349,19 @@ sudo cp "$PROJECT_DIR/wallpapers/"* /usr/share/rocket-desktop/wallpapers/ 2>/dev
 if [ -f "$HOME/.local/share/omarchy/themes/hackerman/backgrounds/1-synth-scape.jpg" ]; then
     sudo cp "$HOME/.local/share/omarchy/themes/hackerman/backgrounds/1-synth-scape.jpg" /usr/share/rocket-desktop/wallpapers/
 fi
+
+# Download galaxy wallpaper if not present
+GALAXY_WALLPAPER="/usr/share/rocket-desktop/wallpapers/galaxy.jpg"
+if [ ! -f "$GALAXY_WALLPAPER" ]; then
+    echo -e "${CYAN}    Downloading galaxy wallpaper...${NC}"
+    sudo wget -q -O "$GALAXY_WALLPAPER" "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=3840&q=80" 2>/dev/null || \
+    sudo wget -q -O "$GALAXY_WALLPAPER" "https://raw.githubusercontent.com/adi1090x/files/main/wallpapers/galaxy.jpg" 2>/dev/null || true
+fi
+
 mkdir -p "$HOME/.config/rocket-desktop"
 cat > "$HOME/.config/rocket-desktop/wallpaper.json" << 'WALLPAPER'
 {
-    "imagePath": "/usr/share/rocket-desktop/wallpapers/1-synth-scape.jpg",
+    "imagePath": "/usr/share/rocket-desktop/wallpapers/galaxy.jpg",
     "scalingMode": "fill"
 }
 WALLPAPER

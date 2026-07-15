@@ -191,32 +191,35 @@ except Exception as e:
     # Launch components
     log "Starting components..."
     
+    # Use full environment for Qt components
+    COMPONENT_ENV="QT_QPA_PLATFORM=wayland WAYLAND_DISPLAY=wayland-0 XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
+    
     # Use full path for kglobalacceld
     if [ -x /usr/lib/org_kde_plasma_kglobalacceld ]; then
-        /usr/lib/org_kde_plasma_kglobalacceld >> "$ROCKET_LOG" 2>&1 &
+        env $COMPONENT_ENV /usr/lib/org_kde_plasma_kglobalacceld >> "$ROCKET_LOG" 2>&1 &
         CHILD_PIDS+=("$!")
     elif [ -x /usr/lib/kglobalacceld ]; then
-        /usr/lib/kglobalacceld >> "$ROCKET_LOG" 2>&1 &
+        env $COMPONENT_ENV /usr/lib/kglobalacceld >> "$ROCKET_LOG" 2>&1 &
         CHILD_PIDS+=("$!")
     fi
     
-    rocket-launcher &
+    env $COMPONENT_ENV rocket-launcher &
     CHILD_PIDS+=("$!")
     sleep 1
     
-    krunner --daemon 2>/dev/null &
+    env $COMPONENT_ENV krunner --daemon 2>/dev/null &
     CHILD_PIDS+=("$!")
     
-    $ROCKET_BIN --panel >> "$ROCKET_LOG" 2>&1 &
+    env $COMPONENT_ENV $ROCKET_BIN --panel >> "$ROCKET_LOG" 2>&1 &
     CHILD_PIDS+=("$!")
-    $ROCKET_BIN --wallpaper >> "$ROCKET_LOG" 2>&1 &
+    env $COMPONENT_ENV $ROCKET_BIN --wallpaper >> "$ROCKET_LOG" 2>&1 &
     CHILD_PIDS+=("$!")
-    $ROCKET_BIN --notifications >> "$ROCKET_LOG" 2>&1 &
+    env $COMPONENT_ENV $ROCKET_BIN --notifications >> "$ROCKET_LOG" 2>&1 &
     CHILD_PIDS+=("$!")
-    $ROCKET_BIN --power >> "$ROCKET_LOG" 2>&1 &
+    env $COMPONENT_ENV $ROCKET_BIN --power >> "$ROCKET_LOG" 2>&1 &
     CHILD_PIDS+=("$!")
     
-    rocket-shortcuts >> "$ROCKET_LOG" 2>&1 &
+    env $COMPONENT_ENV rocket-shortcuts >> "$ROCKET_LOG" 2>&1 &
     CHILD_PIDS+=("$!")
 
     log "All components launched"
