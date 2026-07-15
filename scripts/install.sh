@@ -17,52 +17,245 @@ echo "  ║       Rocket Desktop Install      ║"
 echo "  ╚═══════════════════════════════════╝"
 echo -e "${NC}"
 
-# 1. Install KWin Tiling Script
+# ============================================================================
+# STEP 0: Install Dependencies
+# ============================================================================
+echo -e "${CYAN}[*] Checking and installing dependencies...${NC}"
+
+install_deps() {
+    local DEPS=(
+        # Build tools
+        "cmake"
+        "extra-cmake-modules"
+        "pkg-config"
+        "gcc"
+        "git"
+        
+        # Qt6
+        "qt6-base"
+        "qt6-declarative"
+        "qt6-wayland"
+        "qt6-svg"
+        
+        # KDE Frameworks
+        "kwindowsystem"
+        
+        # System libraries
+        "wayland"
+        "wayland-protocols"
+        "dbus"
+        "networkmanager"
+        "bluez"
+        "pipewire"
+        "wireplumber"
+        
+        # Display manager
+        "sddm"
+        
+        # Utilities
+        "wget"
+        "curl"
+        "base-devel"
+        "yay"
+        
+        # TUI apps for rocket menu
+        "fzf"
+        "ripgrep"
+        "bat"
+        "nano"
+        "vim"
+        "neovim"
+        
+        # System info
+        "lm_sensors"
+        "htop"
+        "fastfetch"
+        
+        # Network
+        "network-manager-applet"
+        "nm-connection-editor"
+        
+        # Audio
+        "pipewire-audio"
+        "pipewire-pulse"
+        "pavucontrol"
+        "playerctl"
+        
+        # Bluetooth
+        "blueman"
+        
+        # File manager
+        "dolphin"
+        "thunar"
+        
+        # Terminal
+        "kitty"
+        "alacritty"
+        
+        # Browser
+        "firefox"
+        
+        # Screenshot
+        "grim"
+        "slurp"
+        "swappy"
+        
+        # Clipboard
+        "wl-clipboard"
+        "cliphist"
+        
+        # Power
+        "power-profiles-daemon"
+        
+        # Appearance
+        "kvantum"
+        "qt5ct"
+        "qt6ct"
+        "lxappearance"
+        "nwg-look"
+        
+        # Fonts
+        "ttf-font-awesome"
+        "ttf-fira-code"
+        "ttf-jetbrains-mono"
+        "noto-fonts"
+        "noto-fonts-emoji"
+        
+        # Notifications
+        "dunst"
+        "libnotify"
+        
+        # Lock screen
+        "swaylock"
+        "swayidle"
+        
+        # Wallpaper
+        "swaybg"
+        
+        # App launcher
+        "wofi"
+        
+        # Bar
+        "waybar"
+    )
+    
+    local MISSING=()
+    
+    for dep in "${DEPS[@]}"; do
+        if ! pacman -Qi "$dep" &>/dev/null; then
+            MISSING+=("$dep")
+        fi
+    done
+    
+    if [ ${#MISSING[@]} -eq 0 ]; then
+        echo -e "${GREEN}[OK] All dependencies installed${NC}"
+        return 0
+    fi
+    
+    echo -e "${YELLOW}Missing dependencies: ${MISSING[*]}${NC}"
+    
+    # Try to install
+    if sudo pacman -S --needed --noconfirm "${MISSING[@]}"; then
+        echo -e "${GREEN}[OK] Dependencies installed${NC}"
+        return 0
+    else
+        local EXIT_CODE=$?
+        # Check if it's a network error (exit code 30 = pacman error)
+        if [ $EXIT_CODE -eq 30 ] || [ $EXIT_CODE -eq 1 ]; then
+            echo -e "${RED}[ERROR] Failed to install dependencies${NC}"
+            echo -e "${YELLOW}This could be a network error or package not found.${NC}"
+            echo ""
+            echo -e "Options:"
+            echo -e "  ${CYAN}1${NC} - Retry (check your internet connection)"
+            echo -e "  ${CYAN}2${NC} - Skip dependencies (may cause issues later)"
+            echo -e "  ${CYAN}3${NC} - Exit"
+            echo ""
+            read -p "Choose option [1/2/3]: " CHOICE
+            
+            case $CHOICE in
+                1)
+                    install_deps
+                    ;;
+                2)
+                    echo -e "${YELLOW}[WARN] Skipping dependencies - some features may not work${NC}"
+                    return 0
+                    ;;
+                *)
+                    echo -e "${RED}[ERROR] Installation cancelled${NC}"
+                    exit 1
+                    ;;
+            esac
+        else
+            echo -e "${RED}[ERROR] Failed to install dependencies${NC}"
+            exit 1
+        fi
+    fi
+}
+
+install_deps
+
+# ============================================================================
+# STEP 1: Install KWin Tiling Script
+# ============================================================================
 echo -e "${CYAN}[*] Installing KWin tiling script...${NC}"
 KWIN_SCRIPTS_DIR="$HOME/.local/share/kwin/scripts"
 mkdir -p "$KWIN_SCRIPTS_DIR"
 cp -r "$PROJECT_DIR/kwin-scripts/rocket-tiling" "$KWIN_SCRIPTS_DIR/"
 echo -e "${GREEN}[OK] Tiling script installed${NC}"
 
-# 2. Install KWin Effects
+# ============================================================================
+# STEP 2: Install KWin Effects
+# ============================================================================
 echo -e "${CYAN}[*] Installing KWin animation effects...${NC}"
 KWIN_EFFECTS_DIR="$HOME/.local/share/kwin/effects"
 mkdir -p "$KWIN_EFFECTS_DIR"
 cp -r "$PROJECT_DIR/kwin-effects/rocket-animations" "$KWIN_EFFECTS_DIR/"
 echo -e "${GREEN}[OK] Animation effects installed${NC}"
 
-# 3. Build Qt6 binary
+# ============================================================================
+# STEP 3: Build Qt6 binary
+# ============================================================================
 echo -e "${CYAN}[*] Building Qt6 components...${NC}"
 mkdir -p "$BUILD_DIR"
 cmake -S "$PROJECT_DIR" -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Release 2>&1 | tail -3
 cmake --build "$BUILD_DIR" -j"$(nproc)" 2>&1 | tail -3
 echo -e "${GREEN}[OK] Build complete${NC}"
 
-# 4. Install binary
+# ============================================================================
+# STEP 4: Install binary
+# ============================================================================
 echo -e "${CYAN}[*] Installing binary...${NC}"
 sudo cp "$BUILD_DIR/src/rocket-session-bin" /usr/bin/rocket-session-bin
 sudo chmod +x /usr/bin/rocket-session-bin
 echo -e "${GREEN}[OK] Binary installed${NC}"
 
-# 5. Install session script
+# ============================================================================
+# STEP 5: Install session script
+# ============================================================================
 echo -e "${CYAN}[*] Installing session script...${NC}"
 sudo cp "$PROJECT_DIR/scripts/rocket-session" /usr/bin/rocket-session
 sudo chmod +x /usr/bin/rocket-session
 echo -e "${GREEN}[OK] Session script installed${NC}"
 
-# 6. Install TUI scripts
+# ============================================================================
+# STEP 6: Install TUI scripts
+# ============================================================================
 echo -e "${CYAN}[*] Installing TUI scripts...${NC}"
 sudo cp "$PROJECT_DIR/scripts/rocket-tui-"* /usr/bin/ 2>/dev/null || true
 sudo chmod +x /usr/bin/rocket-tui-* 2>/dev/null || true
 echo -e "${GREEN}[OK] TUI scripts installed${NC}"
 
-# 7. Install rocketctl
+# ============================================================================
+# STEP 7: Install rocketctl
+# ============================================================================
 echo -e "${CYAN}[*] Installing rocketctl...${NC}"
 sudo cp "$PROJECT_DIR/scripts/rocketctl" /usr/bin/rocketctl
 sudo chmod +x /usr/bin/rocketctl
 echo -e "${GREEN}[OK] rocketctl installed${NC}"
 
-# 8. Install rocket menu scripts
+# ============================================================================
+# STEP 8: Install rocket menu scripts
+# ============================================================================
 echo -e "${CYAN}[*] Installing rocket menu scripts...${NC}"
 for script in rocket-settings rocket-install rocket-remove rocket-update rocket-style rocket-setup rocket-trigger rocket-learn rocket-system; do
     if [ -f "$PROJECT_DIR/scripts/$script" ]; then
@@ -72,13 +265,17 @@ for script in rocket-settings rocket-install rocket-remove rocket-update rocket-
 done
 echo -e "${GREEN}[OK] Rocket menu scripts installed${NC}"
 
-# 9. Install session desktop entry
+# ============================================================================
+# STEP 9: Install session desktop entry
+# ============================================================================
 echo -e "${CYAN}[*] Installing session entry...${NC}"
 sudo mkdir -p /usr/share/wayland-sessions
 sudo cp "$PROJECT_DIR/session/rocket-desktop.desktop" /usr/share/wayland-sessions/
 echo -e "${GREEN}[OK] Session entry installed${NC}"
 
-# 10. Install default config
+# ============================================================================
+# STEP 10: Install default config
+# ============================================================================
 echo -e "${CYAN}[*] Installing default configuration...${NC}"
 mkdir -p "$HOME/.config/rocket"
 if [ ! -f "$HOME/.config/rocket/rocket.conf" ]; then
@@ -89,7 +286,9 @@ if [ ! -f "$HOME/.config/rocket/appearance.conf" ]; then
 fi
 echo -e "${GREEN}[OK] Configuration installed${NC}"
 
-# 11. Install wallpaper
+# ============================================================================
+# STEP 11: Install wallpaper
+# ============================================================================
 echo -e "${CYAN}[*] Installing wallpaper...${NC}"
 sudo mkdir -p /usr/share/rocket-desktop/wallpapers
 sudo cp "$PROJECT_DIR/wallpapers/"* /usr/share/rocket-desktop/wallpapers/ 2>/dev/null || true
@@ -106,7 +305,9 @@ cat > "$HOME/.config/rocket-desktop/wallpaper.json" << 'WALLPAPER'
 WALLPAPER
 echo -e "${GREEN}[OK] Wallpaper installed${NC}"
 
-# 12. Enable KWin tiling script
+# ============================================================================
+# STEP 12: Enable KWin tiling script
+# ============================================================================
 echo -e "${CYAN}[*] Enabling KWin tiling script...${NC}"
 mkdir -p "$HOME/.config"
 KWINRC="$HOME/.config/kwinrc"
@@ -146,7 +347,9 @@ KWINCFG
 fi
 echo -e "${GREEN}[OK] KWin config updated${NC}"
 
-# 13. Configure SDDM Auto-Login
+# ============================================================================
+# STEP 13: Configure SDDM Auto-Login
+# ============================================================================
 echo -e "${CYAN}[*] Configuring SDDM auto-login...${NC}"
 SDDM_CONF="/etc/sddm.conf.d/autologin.conf"
 CURRENT_USER=$(whoami)
@@ -164,7 +367,9 @@ else
     echo -e "${YELLOW}       You can manually select 'Rocket' from your display manager${NC}"
 fi
 
-# 14. Create keybinds reference file
+# ============================================================================
+# STEP 14: Create keybinds reference file
+# ============================================================================
 echo -e "${CYAN}[*] Creating keybinds reference...${NC}"
 mkdir -p "$HOME/.config/rocket"
 cat > "$HOME/.config/rocket/keybinds.txt" << 'KEYBINDS'
