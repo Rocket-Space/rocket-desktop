@@ -18,12 +18,23 @@ export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 
+# Unbuffer Python output for proper logging
+export PYTHONUNBUFFERED=1
+
 ROCKET_BIN="/usr/bin/rocket-session-bin"
 ROCKET_LOG="$HOME/.rocket-session.log"
 ROCKET_PID_FILE="/tmp/rocket-session.pid"
 
+# Log rotation: keep last 1000 lines
+rotate_log() {
+    if [ -f "$ROCKET_LOG" ]; then
+        tail -n 1000 "$ROCKET_LOG" > "$ROCKET_LOG.tmp" && mv "$ROCKET_LOG.tmp" "$ROCKET_LOG"
+    fi
+}
+
 # ── Logging ─────────────────────────────────────────────────────────────────
 log() {
+    rotate_log
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$ROCKET_LOG"
 }
 
@@ -71,10 +82,19 @@ show_menu() {
 
 # ── Launch Rocket Desktop ──────────────────────────────────────────────────
 launch_rocket() {
+    # Track child PIDs for cleanup
+    declare -a CHILD_PIDS=()
+
     cleanup() {
         log "Shutting down..."
-        [ -f "$ROCKET_PID_FILE" ] && kill "$(cat "$ROCKET_PID_FILE")" 2>/dev/null && rm -f "$ROCKET_PID_FILE"
-        kill $(jobs -p) 2>/dev/null; wait 2>/dev/null
+        # Kill all tracked child processes
+        for pid in "${CHILD_PIDS[@]}"; do
+            kill "$pid" 2>/dev/null || true
+        done
+        # Also kill by process group if any remain
+        kill $(jobs -p) 2>/dev/null || true
+        wait 2>/dev/null || true
+        [ -f "$ROCKET_PID_FILE" ] && rm -f "$ROCKET_PID_FILE"
     }
     trap cleanup EXIT INT TERM
 
@@ -125,6 +145,7 @@ except Exception as e:
     log "Starting KWin compositor..."
     kwin_wayland --no-lockscreen --locale1 --xwayland &
     KWIN_PID=$!
+    CHILD_PIDS+=("$KWIN_PID")
     echo "$KWIN_PID" > "$ROCKET_PID_FILE"
 
     # Wait for Wayland display
@@ -169,15 +190,34 @@ except Exception as e:
 
     # Launch components
     log "Starting components..."
-    /usr/lib/kglobalacceld >> "$ROCKET_LOG" 2>&1 &
+    
+    # Use full path for kglobalacceld
+    if [ -x /usr/lib/org_kde_plasma_kglobalacceld ]; then
+        /usr/lib/org_kde_plasma_kglobalacceld >> "$ROCKET_LOG" 2>&1 &
+        CHILD_PIDS+=("$!")
+    elif [ -x /usr/lib/kglobalacceld ]; then
+        /usr/lib/kglobalacceld >> "$ROCKET_LOG" 2>&1 &
+        CHILD_PIDS+=("$!")
+    fi
+    
     rocket-launcher &
+    CHILD_PIDS+=("$!")
     sleep 1
+    
     krunner --daemon 2>/dev/null &
+    CHILD_PIDS+=("$!")
+    
     $ROCKET_BIN --panel >> "$ROCKET_LOG" 2>&1 &
+    CHILD_PIDS+=("$!")
     $ROCKET_BIN --wallpaper >> "$ROCKET_LOG" 2>&1 &
+    CHILD_PIDS+=("$!")
     $ROCKET_BIN --notifications >> "$ROCKET_LOG" 2>&1 &
+    CHILD_PIDS+=("$!")
     $ROCKET_BIN --power >> "$ROCKET_LOG" 2>&1 &
+    CHILD_PIDS+=("$!")
+    
     rocket-shortcuts >> "$ROCKET_LOG" 2>&1 &
+    CHILD_PIDS+=("$!")
 
     log "All components launched"
     wait $KWIN_PID

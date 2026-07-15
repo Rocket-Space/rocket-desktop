@@ -2,5 +2,7 @@
 Name=Rocket
 Comment=Wayland desktop environment
 Exec=/usr/bin/rocket-session --auto
+TryExec=/usr/bin/rocket-session
 Type=Application
 DesktopNames=Rocket
+X-GDM-Session-Type=Wayland

@@ -59,6 +59,7 @@ set(ROCKET_QML
     ../qml/settings/SettingsWindow.qml
     ../qml/clipboard/ClipboardHistory.qml
     ../qml/common/Theme.qml
+    ../qml/wallpaper/WallpaperRenderer.qml
 )
 
 add_executable(rocket-session-bin ${ROCKET_SOURCES} ${ROCKET_HEADERS})
@@ -90,13 +91,6 @@ target_link_libraries(rocket-session-bin PRIVATE
     Qt6::Svg
     Qt6::DBus
     KF6::WindowSystem
-    ${WAYLAND_CLIENT_LIBRARIES}
-    ${DBUS_LIBRARIES}
-)
-
-target_include_directories(rocket-session-bin PRIVATE
-    ${WAYLAND_CLIENT_INCLUDE_DIRS}
-    ${DBUS_INCLUDE_DIRS}
 )
 
 install(TARGETS rocket-session-bin RUNTIME DESTINATION ${ROCKET_BIN_DIR})

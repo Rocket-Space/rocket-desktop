@@ -39,6 +39,9 @@ install_deps() {
         
         # KDE Frameworks
         "kwindowsystem"
+        "kwin"
+        "kglobalacceld"
+        "krunner"
         
         # System libraries
         "wayland"
@@ -51,6 +54,13 @@ install_deps() {
         
         # Display manager
         "sddm"
+        
+        # Qt tools (for qdbus6)
+        "qt6-tools"
+        
+        # Python
+        "python-gobject"
+        "python"
         
         # Utilities
         "wget"
@@ -132,7 +142,8 @@ install_deps() {
         # Wallpaper
         "swaybg"
         
-        # App launcher
+        # App launcher (rofi for rocket-shortcuts, wofi as backup)
+        "rofi-wayland"
         "wofi"
         
         # Bar
@@ -174,7 +185,17 @@ install_deps() {
             
             case $CHOICE in
                 1)
-                    install_deps
+                    # Use loop instead of recursion to avoid stack overflow
+                    while true; do
+                        if sudo pacman -S --needed --noconfirm "${MISSING[@]}"; then
+                            echo -e "${GREEN}[OK] Dependencies installed${NC}"
+                            break
+                        else
+                            echo -e "${RED}[ERROR] Retry failed. Check network.${NC}"
+                            read -p "Retry again? [y/N]: " RETRY
+                            [[ "$RETRY" =~ ^[Yy]$ ]] || { echo -e "${RED}[ERROR] Installation cancelled${NC}"; exit 1; }
+                        fi
+                    done
                     ;;
                 2)
                     echo -e "${YELLOW}[WARN] Skipping dependencies - some features may not work${NC}"
@@ -257,8 +278,9 @@ echo -e "${GREEN}[OK] rocketctl installed${NC}"
 # STEP 8: Install rocket menu scripts
 # ============================================================================
 echo -e "${CYAN}[*] Installing rocket menu scripts...${NC}"
-for script in rocket-settings rocket-install rocket-remove rocket-update rocket-style rocket-setup rocket-trigger rocket-learn rocket-system; do
+for script in rocket-settings rocket-install rocket-remove rocket-update rocket-style rocket-setup rocket-trigger rocket-learn rocket-system rocket-launcher rocket-shortcuts; do
     if [ -f "$PROJECT_DIR/scripts/$script" ]; then
+        chmod +x "$PROJECT_DIR/scripts/$script"
         sudo cp "$PROJECT_DIR/scripts/$script" "/usr/bin/$script"
         sudo chmod +x "/usr/bin/$script"
     fi
@@ -266,7 +288,38 @@ done
 echo -e "${GREEN}[OK] Rocket menu scripts installed${NC}"
 
 # ============================================================================
-# STEP 9: Install session desktop entry
+# STEP 9: Install systemd user services
+# ============================================================================
+echo -e "${CYAN}[*] Installing systemd user services...${NC}"
+mkdir -p "$HOME/.config/systemd/user"
+for service in "$PROJECT_DIR/config/systemd/user/"*; do
+    if [ -f "$service" ]; then
+        cp "$service" "$HOME/.config/systemd/user/"
+    fi
+done
+systemctl --user daemon-reload
+for service in "$PROJECT_DIR/config/systemd/user/"*.service "$PROJECT_DIR/config/systemd/user/"*.target; do
+    if [ -f "$service" ]; then
+        svc_name=$(basename "$service")
+        systemctl --user enable "$svc_name" 2>/dev/null || true
+    fi
+done
+echo -e "${GREEN}[OK] Systemd user services installed${NC}"
+
+# ============================================================================
+# STEP 10: Install autostart files
+# ============================================================================
+echo -e "${CYAN}[*] Installing autostart files...${NC}"
+mkdir -p "$HOME/.config/autostart"
+for desktop in "$PROJECT_DIR/autostart/"*.desktop; do
+    if [ -f "$desktop" ]; then
+        cp "$desktop" "$HOME/.config/autostart/"
+    fi
+done
+echo -e "${GREEN}[OK] Autostart files installed${NC}"
+
+# ============================================================================
+# STEP 11: Install session desktop entry
 # ============================================================================
 echo -e "${CYAN}[*] Installing session entry...${NC}"
 sudo mkdir -p /usr/share/wayland-sessions
@@ -274,7 +327,7 @@ sudo cp "$PROJECT_DIR/session/rocket-desktop.desktop" /usr/share/wayland-session
 echo -e "${GREEN}[OK] Session entry installed${NC}"
 
 # ============================================================================
-# STEP 10: Install default config
+# STEP 12: Install default config
 # ============================================================================
 echo -e "${CYAN}[*] Installing default configuration...${NC}"
 mkdir -p "$HOME/.config/rocket"
@@ -287,7 +340,7 @@ fi
 echo -e "${GREEN}[OK] Configuration installed${NC}"
 
 # ============================================================================
-# STEP 11: Install wallpaper
+# STEP 13: Install wallpaper
 # ============================================================================
 echo -e "${CYAN}[*] Installing wallpaper...${NC}"
 sudo mkdir -p /usr/share/rocket-desktop/wallpapers
@@ -306,7 +359,7 @@ WALLPAPER
 echo -e "${GREEN}[OK] Wallpaper installed${NC}"
 
 # ============================================================================
-# STEP 12: Enable KWin tiling script
+# STEP 14: Enable KWin tiling script
 # ============================================================================
 echo -e "${CYAN}[*] Enabling KWin tiling script...${NC}"
 mkdir -p "$HOME/.config"
@@ -342,13 +395,17 @@ KWINCFG
     fi
     # Enable the tiling script plugin (format: <pluginId>Enabled=true)
     if ! grep -q "rocket-tilingEnabled" "$KWINRC"; then
-        sed -i '/\[Plugins\]/a rocket-tilingEnabled=true' "$KWINRC" 2>/dev/null || true
+        if grep -q "\[Plugins\]" "$KWINRC"; then
+            sed -i '/\[Plugins\]/a rocket-tilingEnabled=true' "$KWINRC" 2>/dev/null || true
+        else
+            printf "\n[Plugins]\nrocket-tilingEnabled=true\n" >> "$KWINRC"
+        fi
     fi
 fi
 echo -e "${GREEN}[OK] KWin config updated${NC}"
 
 # ============================================================================
-# STEP 13: Configure SDDM Auto-Login
+# STEP 15: Configure SDDM Auto-Login
 # ============================================================================
 echo -e "${CYAN}[*] Configuring SDDM auto-login...${NC}"
 SDDM_CONF="/etc/sddm.conf.d/autologin.conf"
@@ -368,7 +425,25 @@ else
 fi
 
 # ============================================================================
-# STEP 14: Create keybinds reference file
+# STEP 16: Enable SDDM service
+# ============================================================================
+echo -e "${CYAN}[*] Enabling SDDM service...${NC}"
+if command -v sddm &> /dev/null; then
+    sudo systemctl enable sddm
+    echo -e "${GREEN}[OK] SDDM enabled${NC}"
+else
+    echo -e "${YELLOW}[WARN] SDDM not found - cannot enable${NC}"
+fi
+
+# ============================================================================
+# STEP 17: Add user to input group (for rocket-shortcuts)
+# ============================================================================
+echo -e "${CYAN}[*] Adding user to input group...${NC}"
+sudo usermod -aG input "$CURRENT_USER"
+echo -e "${GREEN}[OK] User added to input group${NC}"
+
+# ============================================================================
+# STEP 18: Create keybinds reference file
 # ============================================================================
 echo -e "${CYAN}[*] Creating keybinds reference...${NC}"
 mkdir -p "$HOME/.config/rocket"
@@ -377,16 +452,20 @@ Rocket Desktop Keybinds
 =======================
 
 Window Management:
-  Super+Q          Close window
-  Super+F          Toggle float
-  Super+M          Maximize
+  Super+W          Close window
+  Super+Shift+V    Toggle float
+  Super+F          Fullscreen
   Super+H/L        Shrink/Grow master
   Super+J/K        Focus next/prev
 
 Tiling:
   Super+Space      Cycle layout
-  Super+1-5        Switch workspace
-  Super+Shift+1-5  Move to workspace
+  Super+Tab        Next workspace
+  Super+Shift+Tab  Prev workspace
+  Super+1-5        Switch workspace 1-5
+  Super+Shift+1-5  Move window to workspace 1-5
+  Super+I          Add master
+  Super+D          Remove master
 
 Navigation:
   Super+Arrow      Focus direction
@@ -397,8 +476,10 @@ Apps:
   Super+Return     Terminal
   Super+Shift+Return Browser
   Super+Shift+F    File manager
+  Super+Shift+N    Editor
   Super+Escape     Launcher (Rocket menu)
   Super+Print      Screenshot
+  Super+Comma      Show keybinds
 
 System:
   Super+Shift+E    Power menu
