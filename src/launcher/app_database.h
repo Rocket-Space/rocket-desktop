@@ -31,7 +31,7 @@ private:
     AppDatabase(const AppDatabase&) = delete;
     AppDatabase& operator=(const AppDatabase&) = delete;
 
-    void parseDesktopFile(const QString& filePath);
+    void parseDesktopFile(const QString& filePath, const QString& sourcePath);
     QString extractValue(const QString& line) const;
     QString extractField(const QString& content, const QString& field) const;
 

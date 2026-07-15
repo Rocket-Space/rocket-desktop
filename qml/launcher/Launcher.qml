@@ -14,6 +14,8 @@ Item {
     property int selectedIndex: 0
     property string currentView: "categories"
     property string currentCategory: ""
+    property string appFilter: "all"
+    property string appFilter: "all"  // "all", "system", "user"
 
     signal launchApp(string desktopFile)
     signal openTerminal(string command)
@@ -141,7 +143,8 @@ Item {
         var query = searchText.toLowerCase()
         for (var i = 0; i < allApps.length; i++) {
             var app = allApps[i]
-            if (query === "" || fuzzyMatch(app.name.toLowerCase(), query)) {
+            var matchesFilter = (appFilter === "all") || (app.source === appFilter)
+            if (matchesFilter && (query === "" || fuzzyMatch(app.name.toLowerCase(), query))) {
                 results.push(app)
             }
         }
@@ -570,80 +573,138 @@ Item {
     Component {
         id: appsComponent
 
-        GridView {
-            id: appsGrid
-            cellWidth: (width - Common.Theme.gap) / 4
-            cellHeight: 90
-            model: root.filteredApps
-            currentIndex: root.selectedIndex
-            highlightRangeMode: GridView.ApplyRange
-            preferredHighlightBegin: 0
-            preferredHighlightHeight: height
+        ColumnLayout {
+            anchors.fill: parent
 
-            highlight: Rectangle {
+            // Filter tabs
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 40
                 radius: 8
-                color: Common.Theme.withAlpha(Common.Theme.accent, 0.12)
-                border.color: Common.Theme.withAlpha(Common.Theme.accent, 0.3)
+                color: Common.Theme.background
+                border.color: Common.Theme.border
                 border.width: 1
 
-                Behavior on y { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-            }
-
-            delegate: Item {
-                width: appsGrid.cellWidth
-                height: appsGrid.cellHeight
-
-                Rectangle {
+                RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 4
-                    radius: 8
-                    color: appMouse.containsMouse ? Common.Theme.withAlpha(Common.Theme.accent, 0.1) : "transparent"
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 8
+                    spacing: 4
 
-                    Behavior on color { ColorAnimation { duration: 100 } }
+                    Repeater {
+                        model: ["all", "system", "user"]
+                        delegate: Rectangle {
+                            Layout.fillWidth: true
+                            height: 30
+                            radius: 6
+                            color: modelData === root.appFilter ? Common.Theme.withAlpha(Common.Theme.accent, 0.2) : "transparent"
+                            border.color: modelData === root.appFilter ? Common.Theme.accent : "transparent"
+                            border.width: 1
 
-                    ColumnLayout {
-                        anchors.centerIn: parent
-                        spacing: 6
-
-                        Rectangle {
-                            Layout.alignment: Qt.AlignHCenter
-                            width: 44
-                            height: 44
-                            radius: 10
-                            color: Common.Theme.withAlpha(Common.Theme.accent, 0.15)
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                            Behavior on border.color { ColorAnimation { duration: 150 } }
 
                             Text {
                                 anchors.centerIn: parent
-                                text: modelData.name ? modelData.name.charAt(0).toUpperCase() : "?"
-                                font.pixelSize: 20
-                                font.bold: true
-                                color: Common.Theme.accent
+                                text: {
+                                    if (modelData === "all") return "All"
+                                    if (modelData === "system") return "System"
+                                    return "User"
+                                }
+                                font.family: Common.Theme.fontFamily
+                                font.pixelSize: Common.Theme.fontSizeSmall
+                                font.bold: modelData === root.appFilter
+                                color: modelData === root.appFilter ? Common.Theme.accent : Common.Theme.text
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.appFilter = modelData
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Apps grid
+            GridView {
+                id: appsGrid
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                cellWidth: (width - Common.Theme.gap) / 4
+                cellHeight: 90
+                model: root.filteredApps
+                currentIndex: root.selectedIndex
+                highlightRangeMode: GridView.ApplyRange
+                preferredHighlightBegin: 0
+                preferredHighlightHeight: height
+
+                highlight: Rectangle {
+                    radius: 8
+                    color: Common.Theme.withAlpha(Common.Theme.accent, 0.12)
+                    border.color: Common.Theme.withAlpha(Common.Theme.accent, 0.3)
+                    border.width: 1
+
+                    Behavior on y { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                }
+
+                delegate: Item {
+                    width: appsGrid.cellWidth
+                    height: appsGrid.cellHeight
+
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        radius: 8
+                        color: appMouse.containsMouse ? Common.Theme.withAlpha(Common.Theme.accent, 0.1) : "transparent"
+
+                        Behavior on color { ColorAnimation { duration: 100 } }
+
+                        ColumnLayout {
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            Rectangle {
+                                Layout.alignment: Qt.AlignHCenter
+                                width: 44
+                                height: 44
+                                radius: 10
+                                color: Common.Theme.withAlpha(Common.Theme.accent, 0.15)
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: modelData.name ? modelData.name.charAt(0).toUpperCase() : "?"
+                                    font.pixelSize: 20
+                                    font.bold: true
+                                    color: Common.Theme.accent
+                                }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                Layout.leftMargin: 4
+                                Layout.rightMargin: 4
+                                horizontalAlignment: Text.AlignHCenter
+                                text: modelData.name || "App"
+                                font.family: Common.Theme.fontFamily
+                                font.pixelSize: Common.Theme.fontSizeSmall
+                                color: Common.Theme.text
+                                elide: Text.ElideRight
+                                maximumLineCount: 2
+                                wrapMode: Text.Wrap
                             }
                         }
 
-                        Text {
-                            Layout.fillWidth: true
-                            Layout.leftMargin: 4
-                            Layout.rightMargin: 4
-                            horizontalAlignment: Text.AlignHCenter
-                            text: modelData.name || "App"
-                            font.family: Common.Theme.fontFamily
-                            font.pixelSize: Common.Theme.fontSizeSmall
-                            color: Common.Theme.text
-                            elide: Text.ElideRight
-                            maximumLineCount: 2
-                            wrapMode: Text.Wrap
-                        }
-                    }
-
-                    MouseArea {
-                        id: appMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            root.selectedIndex = index
-                            root.launchSelected()
+                        MouseArea {
+                            id: appMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                root.selectedIndex = index
+                                root.launchSelected()
+                            }
                         }
                     }
                 }

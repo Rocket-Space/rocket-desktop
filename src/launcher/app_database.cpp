@@ -43,7 +43,7 @@ void AppDatabase::scan() {
             QStringList() << "*.desktop", QDir::Files);
 
         for (const QString& file : desktopFiles) {
-            parseDesktopFile(dir.absoluteFilePath(file));
+            parseDesktopFile(dir.absoluteFilePath(file), path);
         }
     }
 
@@ -78,7 +78,7 @@ QString AppDatabase::extractField(const QString& content, const QString& field) 
     return {};
 }
 
-void AppDatabase::parseDesktopFile(const QString& filePath) {
+void AppDatabase::parseDesktopFile(const QString& filePath, const QString& sourcePath) {
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return;
 
@@ -99,6 +99,13 @@ void AppDatabase::parseDesktopFile(const QString& filePath) {
     app["categories"] = extractField(content, "Categories");
     app["comment"] = extractField(content, "Comment");
     app["desktopFile"] = filePath;
+    
+    // Determine app source type
+    QString source = "user";
+    if (sourcePath.startsWith("/usr/share/applications") || sourcePath.startsWith("/usr/local/share/applications")) {
+        source = "system";
+    }
+    app["source"] = source;
 
     if (app["name"].toString().isEmpty()) return;
     if (app["exec"].toString().isEmpty()) return;
