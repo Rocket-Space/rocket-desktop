@@ -10,6 +10,7 @@
 #include <QQmlComponent>
 #include <QQuickItem>
 #include <QDBusConnection>
+#include <LayerShellQt/Window>
 
 WallpaperRendererAdaptor::WallpaperRendererAdaptor(QObject* parent)
     : QDBusAbstractAdaptor(parent) {}
@@ -33,12 +34,18 @@ QStringList WallpaperRendererAdaptor::GetAvailableWallpapers() {
 WallpaperRenderer::WallpaperRenderer(QWindow* parent)
     : QQuickWindow(parent)
     , m_adaptor(new WallpaperRendererAdaptor(this)) {
-    setFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnBottomHint);
     setColor(QColor("#0d0d1a"));
 
-    QScreen* screen = QGuiApplication::primaryScreen();
-    if (screen) {
-        setGeometry(screen->availableGeometry());
+    // Anchor this window to the background layer covering the whole output.
+    // Must be configured before the window is first shown.
+    if (auto* layer = LayerShellQt::Window::get(this)) {
+        layer->setLayer(LayerShellQt::Window::LayerBackground);
+        layer->setAnchors(LayerShellQt::Window::Anchors(
+            LayerShellQt::Window::AnchorTop | LayerShellQt::Window::AnchorBottom |
+            LayerShellQt::Window::AnchorLeft | LayerShellQt::Window::AnchorRight));
+        layer->setExclusiveZone(-1);
+        layer->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityNone);
+        layer->setScope(QStringLiteral("wallpaper"));
     }
 
     m_engine = new QQmlEngine(this);
@@ -49,6 +56,8 @@ WallpaperRenderer::WallpaperRenderer(QWindow* parent)
             root->setParentItem(contentItem());
             m_qmlRoot = root;
         }
+    } else {
+        qWarning() << "Wallpaper QML errors:" << m_component->errorString();
     }
 
     loadConfig();

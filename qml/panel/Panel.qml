@@ -28,11 +28,8 @@ Item {
     signal statusClicked(string area)
     signal openTerminal(string command)
 
-    width: root.Window ? root.Window.width : 800
-    height: 44
-    anchors.horizontalCenter: parent ? parent.horizontalCenter : undefined
-    anchors.bottom: parent ? parent.bottom : undefined
-    anchors.bottomMargin: 8
+    anchors.fill: parent ? parent : undefined
+    implicitHeight: 44
 
     Timer {
         interval: 1000

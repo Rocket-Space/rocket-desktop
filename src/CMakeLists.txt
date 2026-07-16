@@ -91,6 +91,7 @@ target_link_libraries(rocket-session-bin PRIVATE
     Qt6::Svg
     Qt6::DBus
     KF6::WindowSystem
+    LayerShellQt::Interface
 )
 
-install(TARGETS rocket-session-bin RUNTIME DESTINATION ${ROCKET_BIN_DIR})
+install(TARGETS rocket-session-bin RUNTIME DESTINATION bin)

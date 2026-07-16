@@ -42,6 +42,7 @@ install_deps() {
         "kwin"
         "kglobalacceld"
         "krunner"
+        "layer-shell-qt"
         
         # System libraries
         "wayland"
@@ -288,35 +289,44 @@ done
 echo -e "${GREEN}[OK] Rocket menu scripts installed${NC}"
 
 # ============================================================================
-# STEP 9: Install systemd user services
+# STEP 9: Clean up redundant startup mechanisms
 # ============================================================================
-echo -e "${CYAN}[*] Installing systemd user services...${NC}"
-mkdir -p "$HOME/.config/systemd/user"
-for service in "$PROJECT_DIR/config/systemd/user/"*; do
-    if [ -f "$service" ]; then
-        cp "$service" "$HOME/.config/systemd/user/"
-    fi
+# Rocket is started exclusively by SDDM autologin -> rocket-session, which
+# launches every component itself. Any leftover systemd user services,
+# systemd autologin services, or autostart .desktop files would double-launch
+# components (panel/wallpaper appearing twice) or grab extra TTYs. Remove them.
+echo -e "${CYAN}[*] Removing redundant startup services...${NC}"
+# Old per-component / session user services from previous installs
+for svc in rocket-session.service rocket-panel.service rocket-wallpaper.service \
+           rocket-notifications.service rocket-clipboard.service \
+           rocket-screenshot.service rocket-shell.service rocket-session.target; do
+    systemctl --user disable "$svc" 2>/dev/null || true
+    rm -f "$HOME/.config/systemd/user/$svc"
 done
-systemctl --user daemon-reload
-for service in "$PROJECT_DIR/config/systemd/user/"*.service "$PROJECT_DIR/config/systemd/user/"*.target; do
-    if [ -f "$service" ]; then
-        svc_name=$(basename "$service")
-        systemctl --user enable "$svc_name" 2>/dev/null || true
-    fi
-done
-echo -e "${GREEN}[OK] Systemd user services installed${NC}"
+systemctl --user daemon-reload 2>/dev/null || true
+# Old system-level autologin services that competed for TTYs
+sudo systemctl disable rocket-autologin@tty1.service 2>/dev/null || true
+sudo systemctl disable rocket-autologin.service 2>/dev/null || true
+sudo rm -f /usr/lib/systemd/system/rocket-autologin@.service \
+           /usr/lib/systemd/system/rocket-autologin.service \
+           /etc/systemd/system/rocket-autologin@.service \
+           /etc/systemd/system/rocket-autologin.service \
+           /etc/systemd/system/getty.target.wants/rocket-autologin@tty1.service 2>/dev/null || true
+sudo systemctl daemon-reload 2>/dev/null || true
+echo -e "${GREEN}[OK] Redundant services removed${NC}"
 
 # ============================================================================
-# STEP 10: Install autostart files
+# STEP 10: Remove redundant autostart files
 # ============================================================================
-echo -e "${CYAN}[*] Installing autostart files...${NC}"
-mkdir -p "$HOME/.config/autostart"
+# rocket-session already launches these components; autostart entries would
+# start a second copy. Remove any that exist from previous installs.
+echo -e "${CYAN}[*] Removing redundant autostart entries...${NC}"
 for desktop in "$PROJECT_DIR/autostart/"*.desktop; do
     if [ -f "$desktop" ]; then
-        cp "$desktop" "$HOME/.config/autostart/"
+        rm -f "$HOME/.config/autostart/$(basename "$desktop")"
     fi
 done
-echo -e "${GREEN}[OK] Autostart files installed${NC}"
+echo -e "${GREEN}[OK] Redundant autostart entries removed${NC}"
 
 # ============================================================================
 # STEP 11: Install session desktop entry

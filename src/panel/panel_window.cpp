@@ -3,6 +3,7 @@
 #include <QGuiApplication>
 #include <QDBusConnection>
 #include <QQuickItem>
+#include <LayerShellQt/Window>
 
 namespace Rocket {
 
@@ -27,23 +28,33 @@ void PanelWindowAdaptor::Hide() {
 PanelWindow::PanelWindow(QWindow* parent)
     : QQuickWindow(parent)
     , m_adaptor(new PanelWindowAdaptor(this)) {
-    setFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setColor(Qt::transparent);
     setTitle("Rocket Panel");
 
-    QScreen* screen = QGuiApplication::primaryScreen();
-    if (screen) {
-        int sw = screen->availableGeometry().width();
-        int sh = screen->availableGeometry().height();
-        setGeometry(8, sh - 52, sw - 16, 44);
+    // Anchor the panel to the top layer at the bottom edge, reserving its height.
+    // Must be configured before the window is first shown.
+    if (auto* layer = LayerShellQt::Window::get(this)) {
+        layer->setLayer(LayerShellQt::Window::LayerTop);
+        layer->setAnchors(LayerShellQt::Window::Anchors(
+            LayerShellQt::Window::AnchorBottom |
+            LayerShellQt::Window::AnchorLeft |
+            LayerShellQt::Window::AnchorRight));
+        layer->setExclusiveZone(panelHeight());
+        layer->setMargins(QMargins(8, 0, 8, 8));
+        layer->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityOnDemand);
+        layer->setScope(QStringLiteral("panel"));
     }
+    resize(width(), panelHeight());
 
     m_engine = new QQmlEngine(this);
     m_component = new QQmlComponent(m_engine, QUrl("qrc:/qml/panel/Panel.qml"));
     if (!m_component->isError()) {
-        QQuickItem* root = qobject_cast<QQuickItem*>(m_component->create());
-        if (root) {
-            root->setParentItem(contentItem());
+        QObject* obj = m_component->create();
+        if (obj) {
+            QQuickItem* root = qobject_cast<QQuickItem*>(obj);
+            if (root) {
+                root->setParentItem(contentItem());
+            }
         }
     } else {
         qWarning() << "Panel QML errors:" << m_component->errorString();
