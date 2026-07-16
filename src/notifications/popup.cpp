@@ -38,10 +38,13 @@ void NotificationPopup::showNotification(const QJsonObject& notification) {
     window->setTitle("Notification");
 
     auto* engine = new QQmlEngine(window);
+    engine->addImportPath("qrc:/qml/common");
     auto* component = new QQmlComponent(engine, QUrl("qrc:/qml/NotificationPopup.qml"));
     if (!component->isError()) {
         QQuickItem* root = qobject_cast<QQuickItem*>(component->create());
         if (root) root->setParentItem(window->contentItem());
+    } else {
+        qWarning() << "NotificationPopup QML errors:" << component->errorString();
     }
 
     m_popups[id] = window;

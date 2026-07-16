@@ -1,6 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Window 2.15
-import "../common" as Common
+import Common
 
 Item {
     id: root
@@ -17,7 +17,7 @@ Item {
                 case "fit": return Image.PreserveAspectFit;
                 case "fill": return Image.PreserveAspectCrop;
                 case "stretch": return Image.Stretch;
-                case "center": return Image.AlignHCenter | Image.AlignVCenter;
+                case "center": return Image.PreserveAspectFit; // center with fit behavior
                 case "tile": return Image.Tile;
                 default: return Image.PreserveAspectCrop;
             }

@@ -2,24 +2,13 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Window 2.15
-import "../common" as Common
+import Common
 
 Item {
     id: root
 
-    property int activeWorkspace: 0
-    property var windows: []
-    property string clockTime: Qt.formatDateTime(new Date(), "HH:mm")
-    property bool launcherVisible: false
-
-    property real batteryLevel: 100
-    property bool batteryCharging: false
-    property string networkName: "Connected"
-    property bool networkConnected: true
-    property int volumeLevel: 75
-    property bool volumeMuted: false
-    property real cpuUsage: 0
-    property bool bluetoothEnabled: false
+    property int activeWorkspace: workspaceIndicator.currentWorkspace
+    property var windows: taskbar.windows
 
     signal workspaceChanged(int index)
     signal windowClicked(int id)
@@ -31,66 +20,14 @@ Item {
     anchors.fill: parent ? parent : undefined
     implicitHeight: 44
 
-    Timer {
-        interval: 1000
-        running: true
-        repeat: true
-        onTriggered: clockTime = Qt.formatDateTime(new Date(), "HH:mm")
+    Connections {
+        target: workspaceIndicator
+        onCurrentWorkspaceChanged: root.activeWorkspace = workspaceIndicator.currentWorkspace
     }
 
-    Timer {
-        interval: 2000
-        running: true
-        repeat: true
-        onTriggered: {
-            updateSystemStats()
-        }
-    }
-
-    function updateSystemStats() {
-        try {
-            var cpuFile = "/proc/stat"
-            var xhr = new XMLHttpRequest()
-            xhr.open("GET", "file://" + cpuFile, false)
-            xhr.send()
-            if (xhr.status === 200) {
-                var lines = xhr.responseText.split("\n")
-                if (lines.length > 0) {
-                    var parts = lines[0].split(/\s+/)
-                    if (parts.length >= 5) {
-                        var user = parseInt(parts[1]) || 0
-                        var nice = parseInt(parts[2]) || 0
-                        var system = parseInt(parts[3]) || 0
-                        var idle = parseInt(parts[4]) || 0
-                        var total = user + nice + system + idle
-                        root.cpuUsage = Math.round((total - idle) / total * 100)
-                    }
-                }
-            }
-        } catch(e) {}
-    }
-
-    function getBatteryIcon() {
-        if (root.batteryCharging) return "\u26A1"
-        if (root.batteryLevel > 75) return "\u25CF"
-        if (root.batteryLevel > 50) return "\u25D4"
-        if (root.batteryLevel > 25) return "\u25D1"
-        return "\u25D2"
-    }
-
-    function getVolumeIcon() {
-        if (root.volumeMuted || root.volumeLevel === 0) return "\u2716"
-        if (root.volumeLevel < 33) return "\u266A"
-        if (root.volumeLevel < 66) return "\u266B"
-        return "\u266C"
-    }
-
-    function getNetworkIcon() {
-        return root.networkConnected ? "\u25C8" : "\u25CE"
-    }
-
-    function getBluetoothIcon() {
-        return root.bluetoothEnabled ? "\u25B8" : "\u25B9"
+    Connections {
+        target: taskbar
+        onWindowsChanged: root.windows = taskbar.windows
     }
 
     Rectangle {
@@ -115,7 +52,7 @@ Item {
             Layout.alignment: Qt.AlignVCenter
 
             Repeater {
-                model: 4
+                model: workspaceIndicator.workspaceCount
 
                 Rectangle {
                     width: root.activeWorkspace === index ? 16 : 8
@@ -131,7 +68,10 @@ Item {
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: root.workspaceChanged(index)
+                        onClicked: {
+                            workspaceIndicator.switchTo(index)
+                            root.workspaceChanged(index)
+                        }
                     }
                 }
             }
@@ -215,7 +155,7 @@ Item {
             Text {
                 id: clockLabel
                 anchors.centerIn: parent
-                text: root.clockTime
+                text: clock.time
                 font.family: Common.Theme.fontFamily
                 font.pixelSize: Common.Theme.fontSize
                 font.bold: true
@@ -250,7 +190,7 @@ Item {
                     }
 
                     Text {
-                        text: root.cpuUsage + "%"
+                        text: statusArea.cpuUsage + "%"
                         font.family: Common.Theme.fontFamily
                         font.pixelSize: 11
                         font.bold: true
@@ -268,7 +208,7 @@ Item {
 
                 ToolTip {
                     visible: cpuMouse.containsMouse
-                    text: "CPU: " + root.cpuUsage + "%\nClick to open htop"
+                    text: "CPU: " + statusArea.cpuUsage + "%\nClick to open htop"
                     delay: 500
                 }
             }
@@ -295,18 +235,18 @@ Item {
                     spacing: 4
 
                     Text {
-                        text: getBatteryIcon()
+                        text: statusArea.batteryIcon
                         font.pixelSize: 12
-                        color: root.batteryCharging ? "#00ff88" : (root.batteryLevel < 20 ? "#ff3355" : Common.Theme.text)
+                        color: statusArea.batteryCharging ? "#00ff88" : (statusArea.batteryLevel < 20 ? "#ff3355" : Common.Theme.text)
                     }
 
                     Text {
-                        text: Math.round(root.batteryLevel) + "%"
+                        text: Math.round(statusArea.batteryLevel) + "%"
                         font.family: Common.Theme.fontFamily
                         font.pixelSize: 11
                         font.bold: true
                         color: Common.Theme.text
-                        visible: root.batteryLevel < 100 || root.batteryCharging
+                        visible: statusArea.batteryLevel < 100 || statusArea.batteryCharging
                     }
                 }
 
@@ -315,12 +255,12 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: root.openTerminal("powerprofilesctl get && upower -i /org/freedesktop/UPower/devices/battery_BAT0")
+                    onClicked: statusArea.openTerminalWithCommand("powerprofilesctl get && upower -i /org/freedesktop/UPower/devices/battery_BAT0")
                 }
 
                 ToolTip {
                     visible: batteryMouse.containsMouse
-                    text: "Battery: " + Math.round(root.batteryLevel) + "%" + (root.batteryCharging ? " (Charging)" : "") + "\nClick for details"
+                    text: "Battery: " + Math.round(statusArea.batteryLevel) + "%" + (statusArea.batteryCharging ? " (Charging)" : "") + "\nClick for details"
                     delay: 500
                 }
             }
@@ -347,13 +287,13 @@ Item {
                     spacing: 4
 
                     Text {
-                        text: getNetworkIcon()
+                        text: statusArea.networkIcon
                         font.pixelSize: 12
-                        color: root.networkConnected ? "#00ff88" : "#ff3355"
+                        color: statusArea.networkConnected ? "#00ff88" : "#ff3355"
                     }
 
                     Text {
-                        text: root.networkConnected ? (root.networkName || "WiFi") : "Offline"
+                        text: statusArea.networkConnected ? (statusArea.networkName || "WiFi") : "Offline"
                         font.family: Common.Theme.fontFamily
                         font.pixelSize: 11
                         font.bold: true
@@ -369,12 +309,12 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: root.openTerminal("nmtui || nmcli device wifi list")
+                    onClicked: statusArea.openTerminalWithCommand("nmtui || nmcli device wifi list")
                 }
 
                 ToolTip {
                     visible: networkMouse.containsMouse
-                    text: "Network: " + (root.networkConnected ? root.networkName : "Disconnected") + "\nClick to open nmtui"
+                    text: "Network: " + (statusArea.networkConnected ? statusArea.networkName : "Disconnected") + "\nClick to open nmtui"
                     delay: 500
                 }
             }
@@ -401,13 +341,13 @@ Item {
                     spacing: 4
 
                     Text {
-                        text: getVolumeIcon()
+                        text: statusArea.volumeIcon
                         font.pixelSize: 12
-                        color: root.volumeMuted ? "#ff3355" : Common.Theme.text
+                        color: statusArea.muted ? "#ff3355" : Common.Theme.text
                     }
 
                     Text {
-                        text: root.volumeMuted ? "Muted" : root.volumeLevel + "%"
+                        text: statusArea.muted ? "Muted" : statusArea.volume + "%"
                         font.family: Common.Theme.fontFamily
                         font.pixelSize: 11
                         font.bold: true
@@ -420,19 +360,19 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: root.openTerminal("pavucontrol || pwvucontrol || alsamixer")
+                    onClicked: statusArea.openTerminalWithCommand("pavucontrol || pwvucontrol || alsamixer")
                     onWheel: {
                         if (wheel.angleDelta.y > 0) {
-                            root.volumeLevel = Math.min(100, root.volumeLevel + 5)
+                            statusArea.setVolume(Math.min(100, statusArea.volume + 5))
                         } else {
-                            root.volumeLevel = Math.max(0, root.volumeLevel - 5)
+                            statusArea.setVolume(Math.max(0, statusArea.volume - 5))
                         }
                     }
                 }
 
                 ToolTip {
                     visible: volumeMouse.containsMouse
-                    text: "Volume: " + (root.volumeMuted ? "Muted" : root.volumeLevel + "%") + "\nClick for mixer, Scroll to adjust"
+                    text: "Volume: " + (statusArea.muted ? "Muted" : statusArea.volume + "%") + "\nClick for mixer, Scroll to adjust"
                     delay: 500
                 }
             }
@@ -459,10 +399,10 @@ Item {
                     spacing: 4
 
                     Text {
-                        text: getBluetoothIcon()
+                        text: statusArea.bluetoothEnabled ? "\u25B8" : "\u25B9"
                         font.pixelSize: 12
-                        color: root.bluetoothEnabled ? "#00d4ff" : Common.Theme.text
-                        opacity: root.bluetoothEnabled ? 1.0 : 0.5
+                        color: statusArea.bluetoothEnabled ? "#00d4ff" : Common.Theme.text
+                        opacity: statusArea.bluetoothEnabled ? 1.0 : 0.5
                     }
                 }
 
@@ -471,12 +411,12 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: root.openTerminal("bluetoothctl || blueman-manager")
+                    onClicked: statusArea.toggleBluetooth()
                 }
 
                 ToolTip {
                     visible: bluetoothMouse.containsMouse
-                    text: "Bluetooth: " + (root.bluetoothEnabled ? "Enabled" : "Disabled") + "\nClick to open bluetoothctl"
+                    text: "Bluetooth: " + (statusArea.bluetoothEnabled ? "Enabled" : "Disabled") + "\nClick to open bluetoothctl"
                     delay: 500
                 }
             }

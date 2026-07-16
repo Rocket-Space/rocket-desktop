@@ -1,5 +1,41 @@
 #!/bin/bash
-set -e
+
+# ── Auto-detect binary ──────────────────────────────────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+BUILD_DIR="$PROJECT_DIR/build"
+
+ROCKET_BIN=""
+for candidate in \
+    "$BUILD_DIR/src/rocket-session-bin" \
+    "/usr/bin/rocket-session-bin" \
+    "/usr/local/bin/rocket-session-bin" \
+    "$HOME/.local/bin/rocket-session-bin"; do
+    if [ -x "$candidate" ]; then
+        ROCKET_BIN="$candidate"
+        break
+    fi
+done
+
+if [ -z "$ROCKET_BIN" ] && [ -f "$PROJECT_DIR/CMakeLists.txt" ]; then
+    echo "[rocket] Building from source..."
+    mkdir -p "$BUILD_DIR" 2>/dev/null
+    cmake -S "$PROJECT_DIR" -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Release 2>&1 | tail -3
+    make -C "$BUILD_DIR" -j"$(nproc)" 2>&1 | tail -3
+    if [ -x "$BUILD_DIR/src/rocket-session-bin" ]; then
+        ROCKET_BIN="$BUILD_DIR/src/rocket-session-bin"
+        echo "[rocket] Build complete: $ROCKET_BIN"
+    fi
+fi
+
+if [ -z "$ROCKET_BIN" ] && [ -x "$BUILD_DIR/src/rocket-session-bin" ]; then
+    ROCKET_BIN="$BUILD_DIR/src/rocket-session-bin"
+fi
+
+if [ -z "$ROCKET_BIN" ]; then
+    echo "[rocket] ERROR: rocket-session-bin not found."
+    exit 1
+fi
 
 # ── Environment ─────────────────────────────────────────────────────────────
 export QT_QPA_PLATFORM=wayland
@@ -21,15 +57,12 @@ export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 # Unbuffer Python output for proper logging
 export PYTHONUNBUFFERED=1
 
-ROCKET_BIN="/usr/bin/rocket-session-bin"
 ROCKET_LOG="$HOME/.rocket-session.log"
 ROCKET_PID_FILE="/tmp/rocket-session.pid"
 
-# Log rotation: keep last 1000 lines
 rotate_log() {
-    if [ -f "$ROCKET_LOG" ]; then
-        tail -n 1000 "$ROCKET_LOG" > "$ROCKET_LOG.tmp" && mv "$ROCKET_LOG.tmp" "$ROCKET_LOG"
-    fi
+    [ -f "$ROCKET_LOG" ] || return 0
+    tail -n 1000 "$ROCKET_LOG" > "$ROCKET_LOG.tmp" 2>/dev/null && mv "$ROCKET_LOG.tmp" "$ROCKET_LOG" 2>/dev/null || true
 }
 
 # ── Logging ─────────────────────────────────────────────────────────────────
@@ -132,24 +165,23 @@ try:
     print('Shortcuts cleaned', file=sys.stderr)
 except Exception as e:
     print(f'Cleanup error: {e}', file=sys.stderr)
-" >> "$ROCKET_LOG" 2>&1
+" >> "$ROCKET_LOG" 2>&1 || true
 
-    # Disable KWin built-in effects that intercept shortcuts
     KWINRC="$HOME/.config/kwinrc"
     if ! grep -q "\[Effect-overview\]" "$KWINRC" 2>/dev/null; then
-        printf "\n[Effect-overview]\nEnable=false\n" >> "$KWINRC"
+        printf "\n[Effect-overview]\nEnable=false\n" >> "$KWINRC" 2>/dev/null || true
     fi
-    sed -i '/\[Effect-overview\]/,/^\[/{s/Enable=true/Enable=false/}' "$KWINRC" 2>/dev/null
+    sed -i '/\[Effect-overview\]/,/^\[/{s/Enable=true/Enable=false/}' "$KWINRC" 2>/dev/null || true
 
-    # Start KWin
     log "Starting KWin compositor..."
-    kwin_wayland --no-lockscreen --locale1 --xwayland &
+    KWIN_ARGS="--no-lockscreen --xwayland --locale1"
+    kwin_wayland $KWIN_ARGS &
     KWIN_PID=$!
     CHILD_PIDS+=("$KWIN_PID")
     echo "$KWIN_PID" > "$ROCKET_PID_FILE"
 
-    # Wait for Wayland display
     log "Waiting for Wayland display..."
+    unset WAYLAND_DISPLAY
     for i in $(seq 1 30); do
         if [ -e "$XDG_RUNTIME_DIR/wayland-0" ]; then
             export WAYLAND_DISPLAY="wayland-0"
@@ -165,7 +197,6 @@ except Exception as e:
 
     log "Wayland display ready: $WAYLAND_DISPLAY"
 
-    # Load KWin tiling script
     log "Loading KWin tiling script..."
     RETRIES=0
     while [ $RETRIES -lt 20 ]; do
@@ -180,7 +211,6 @@ except Exception as e:
     SCRIPTS=$(qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.isScriptLoaded "rocket-tiling" 2>/dev/null || echo "unknown")
     log "Tiling script loaded: $SCRIPTS"
 
-    # Enable effects
     log "Enabling effects..."
     sleep 0.5
     qdbus6 org.kde.KWin /Effects org.kde.KWin.Effects.loadEffect "fade" 2>/dev/null || true
@@ -188,13 +218,10 @@ except Exception as e:
     qdbus6 org.kde.KWin /Effects org.kde.KWin.Effects.loadEffect "slide" 2>/dev/null || true
     qdbus6 org.kde.KWin /Effects org.kde.KWin.Effects.loadEffect "blur" 2>/dev/null || true
 
-    # Launch components
     log "Starting components..."
     
-    # Use full environment for Qt components
     COMPONENT_ENV="QT_QPA_PLATFORM=wayland WAYLAND_DISPLAY=wayland-0 XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
     
-    # Use full path for kglobalacceld
     if [ -x /usr/lib/org_kde_plasma_kglobalacceld ]; then
         env $COMPONENT_ENV /usr/lib/org_kde_plasma_kglobalacceld >> "$ROCKET_LOG" 2>&1 &
         CHILD_PIDS+=("$!")
@@ -238,8 +265,6 @@ done
 if [ "$AUTO_LAUNCH" = true ]; then
     launch_rocket
 elif [ -n "$WAYLAND_DISPLAY" ] || [ -n "$DISPLAY" ]; then
-    launch_rocket
-elif [ -n "$XDG_VTNR" ]; then
     launch_rocket
 else
     show_menu

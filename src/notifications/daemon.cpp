@@ -1,5 +1,6 @@
 #include "daemon.h"
 #include <QDBusConnection>
+#include <QDBusError>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QDateTime>
@@ -18,7 +19,9 @@ NotificationDaemon::NotificationDaemon(QObject* parent)
     : QObject(parent)
     , m_adaptor(new NotificationDaemonAdaptor(this)) {
     QDBusConnection bus = QDBusConnection::sessionBus();
-    bus.registerService("org.freedesktop.Notifications");
+    if (!bus.registerService("org.freedesktop.Notifications")) {
+        qWarning() << "Failed to register DBus notification service:" << bus.lastError();
+    }
     bus.registerObject("/org/freedesktop/Notifications", this);
 }
 

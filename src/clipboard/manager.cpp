@@ -2,6 +2,7 @@
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QDBusConnection>
+#include <QDBusError>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QDateTime>
@@ -24,7 +25,9 @@ ClipboardManager::ClipboardManager(QObject* parent)
     m_pollTimer->start();
 
     QDBusConnection bus = QDBusConnection::sessionBus();
-    bus.registerService("org.rocket.Clipboard");
+    if (!bus.registerService("org.rocket.Clipboard")) {
+        qWarning() << "Failed to register DBus service:" << bus.lastError();
+    }
     bus.registerObject("/org/rocket/Clipboard", this);
 }
 
@@ -133,6 +136,18 @@ QJsonArray ClipboardManager::search(const QString& query) const {
         }
     }
     return arr;
+}
+
+QString ClipboardManager::getItem(int index) const {
+    if (index < 0 || index >= m_entries.size()) return {};
+    return m_entries[index].text;
+}
+
+void ClipboardManager::copyToClipboard(const QString& text) {
+    QClipboard* clipboard = QGuiApplication::clipboard();
+    if (clipboard) {
+        clipboard->setText(text);
+    }
 }
 
 ClipboardManagerAdaptor::ClipboardManagerAdaptor(QObject* parent)

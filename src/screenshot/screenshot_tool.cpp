@@ -6,6 +6,7 @@
 #include <QStandardPaths>
 #include <QDateTime>
 #include <QDBusConnection>
+#include <QDBusError>
 
 ScreenshotTool* ScreenshotTool::s_instance = nullptr;
 
@@ -20,7 +21,9 @@ ScreenshotTool::ScreenshotTool(QObject* parent)
     : QObject(parent)
     , m_adaptor(new ScreenshotToolAdaptor(this)) {
     QDBusConnection bus = QDBusConnection::sessionBus();
-    bus.registerService("org.rocket.Screenshot");
+    if (!bus.registerService("org.rocket.Screenshot")) {
+        qWarning() << "Failed to register DBus service:" << bus.lastError();
+    }
     bus.registerObject("/org/rocket/Screenshot", this);
 }
 

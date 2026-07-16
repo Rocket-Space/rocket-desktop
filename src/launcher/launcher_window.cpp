@@ -3,6 +3,7 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QDBusConnection>
+#include <QDBusError>
 #include <QJsonArray>
 #include <QQmlEngine>
 #include <QQmlComponent>
@@ -47,16 +48,21 @@ LauncherWindow::LauncherWindow(QWindow* parent)
     }
 
     m_engine = new QQmlEngine(this);
+    m_engine->addImportPath("qrc:/qml/common");
     m_component = new QQmlComponent(m_engine, QUrl("qrc:/qml/Launcher.qml"));
     if (!m_component->isError()) {
         QQuickItem* root = qobject_cast<QQuickItem*>(m_component->create());
         if (root) {
             root->setParentItem(contentItem());
         }
+    } else {
+        qWarning() << "Launcher QML errors:" << m_component->errorString();
     }
 
     QDBusConnection bus = QDBusConnection::sessionBus();
-    bus.registerService("org.rocket.Launcher");
+    if (!bus.registerService("org.rocket.Launcher")) {
+        qWarning() << "Failed to register DBus service:" << bus.lastError();
+    }
     bus.registerObject("/org/rocket/Launcher", this);
 }
 

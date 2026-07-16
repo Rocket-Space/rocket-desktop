@@ -3,6 +3,7 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QDBusConnection>
+#include <QDBusError>
 #include <QClipboard>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -36,6 +37,7 @@ ClipboardHistoryWindow::ClipboardHistoryWindow(QWindow* parent)
     }
 
     m_engine = new QQmlEngine(this);
+    m_engine->addImportPath("qrc:/qml/common");
     m_component = new QQmlComponent(m_engine, QUrl("qrc:/qml/ClipboardHistory.qml"));
     if (!m_component->isError()) {
         QQuickItem* root = qobject_cast<QQuickItem*>(m_component->create());
@@ -43,7 +45,9 @@ ClipboardHistoryWindow::ClipboardHistoryWindow(QWindow* parent)
     }
 
     QDBusConnection bus = QDBusConnection::sessionBus();
-    bus.registerService("org.rocket.Clipboard.History");
+    if (!bus.registerService("org.rocket.Clipboard.History")) {
+        qWarning() << "Failed to register DBus service:" << bus.lastError();
+    }
     bus.registerObject("/org/rocket/Clipboard/History", this);
 }
 
@@ -76,6 +80,9 @@ void ClipboardHistoryWindow::toggle() {
 }
 
 void ClipboardHistoryWindow::copyItem(int index) {
-    Q_UNUSED(index);
-    hide();
+    QString text = m_manager->getItem(index);
+    if (!text.isEmpty()) {
+        m_manager->copyToClipboard(text);
+        hide();
+    }
 }

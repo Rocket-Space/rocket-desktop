@@ -2,6 +2,7 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QDBusConnection>
+#include <QDBusError>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QQmlEngine>
@@ -29,16 +30,21 @@ OverviewWindow::OverviewWindow(QWindow* parent)
     }
 
     m_engine = new QQmlEngine(this);
+    m_engine->addImportPath("qrc:/qml/common");
     m_component = new QQmlComponent(m_engine, QUrl("qrc:/qml/Overview.qml"));
     if (!m_component->isError()) {
         QQuickItem* root = qobject_cast<QQuickItem*>(m_component->create());
         if (root) {
             root->setParentItem(contentItem());
         }
+    } else {
+        qWarning() << "Overview QML errors:" << m_component->errorString();
     }
 
     QDBusConnection bus = QDBusConnection::sessionBus();
-    bus.registerService("org.rocket.Overview");
+    if (!bus.registerService("org.rocket.Overview")) {
+        qWarning() << "Failed to register DBus service:" << bus.lastError();
+    }
     bus.registerObject("/org/rocket/Overview", this);
 }
 

@@ -43,6 +43,8 @@ public:
     Q_INVOKABLE void removeItem(int index);
     Q_INVOKABLE void pinItem(int index);
     Q_INVOKABLE QJsonArray search(const QString& query) const;
+    Q_INVOKABLE QString getItem(int index) const;
+    Q_INVOKABLE void copyToClipboard(const QString& text);
 
 signals:
     void clipboardChanged(const QString& text);

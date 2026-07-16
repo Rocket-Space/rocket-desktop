@@ -2,8 +2,16 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QDBusConnection>
+#include <QDBusError>
 #include <QQuickItem>
+#include <QQmlContext>
 #include <LayerShellQt/Window>
+#include <QSizeF>
+#include "panel/widgets/clock.h"
+#include "panel/widgets/status_area.h"
+#include "panel/widgets/taskbar.h"
+#include "panel/widgets/system_tray.h"
+#include "panel/widgets/workspace_indicator.h"
 
 namespace Rocket {
 
@@ -46,7 +54,22 @@ PanelWindow::PanelWindow(QWindow* parent)
     }
     resize(width(), panelHeight());
 
+    // Create panel widget backends
+    auto* clock = new Clock(this);
+    auto* statusArea = new StatusArea(this);
+    auto* taskbar = new Taskbar(this);
+    auto* systemTray = new SystemTray(this);
+    auto* workspaceIndicator = new WorkspaceIndicator(this);
+
     m_engine = new QQmlEngine(this);
+    m_engine->addImportPath("qrc:/qml/common");
+    // Expose C++ widgets to QML
+    m_engine->rootContext()->setContextProperty("clock", clock);
+    m_engine->rootContext()->setContextProperty("statusArea", statusArea);
+    m_engine->rootContext()->setContextProperty("taskbar", taskbar);
+    m_engine->rootContext()->setContextProperty("systemTray", systemTray);
+    m_engine->rootContext()->setContextProperty("workspaceIndicator", workspaceIndicator);
+
     m_component = new QQmlComponent(m_engine, QUrl("qrc:/qml/panel/Panel.qml"));
     if (!m_component->isError()) {
         QObject* obj = m_component->create();
@@ -54,6 +77,13 @@ PanelWindow::PanelWindow(QWindow* parent)
             QQuickItem* root = qobject_cast<QQuickItem*>(obj);
             if (root) {
                 root->setParentItem(contentItem());
+                root->setSize(QSizeF(contentItem()->width(), contentItem()->height()));
+                connect(contentItem(), &QQuickItem::widthChanged, this, [this, root]() {
+                    root->setWidth(contentItem()->width());
+                });
+                connect(contentItem(), &QQuickItem::heightChanged, this, [this, root]() {
+                    root->setHeight(contentItem()->height());
+                });
             }
         }
     } else {
@@ -61,7 +91,9 @@ PanelWindow::PanelWindow(QWindow* parent)
     }
 
     QDBusConnection bus = QDBusConnection::sessionBus();
-    bus.registerService("org.rocket.Panel");
+    if (!bus.registerService("org.rocket.Panel")) {
+        qWarning() << "Failed to register DBus service:" << bus.lastError();
+    }
     bus.registerObject("/org/rocket/Panel", this);
 }
 

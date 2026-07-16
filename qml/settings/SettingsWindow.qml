@@ -2,7 +2,7 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Window 2.15
-import "../common" as Common
+import Common
 
 Item {
     id: root
@@ -350,8 +350,6 @@ Item {
                                 color: Common.Theme.text
                                 Layout.preferredWidth: 24
                                 horizontalAlignment: Text.AlignRight
-
-                                property alias sliderFontSize: sliderFontSize
                             }
 
                             Slider {

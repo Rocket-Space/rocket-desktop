@@ -2,6 +2,7 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QDBusConnection>
+#include <QDBusError>
 #include <QStandardPaths>
 #include <QDir>
 #include <QFile>
@@ -35,16 +36,21 @@ SettingsWindow::SettingsWindow(QWindow* parent)
     }
 
     m_engine = new QQmlEngine(this);
+    m_engine->addImportPath("qrc:/qml/common");
     m_component = new QQmlComponent(m_engine, QUrl("qrc:/qml/settings/SettingsWindow.qml"));
     if (!m_component->isError()) {
         QQuickItem* root = qobject_cast<QQuickItem*>(m_component->create());
         if (root) root->setParentItem(contentItem());
+    } else {
+        qWarning() << "Settings QML errors:" << m_component->errorString();
     }
 
     loadSettings();
 
     QDBusConnection bus = QDBusConnection::sessionBus();
-    bus.registerService("org.rocket.Settings");
+    if (!bus.registerService("org.rocket.Settings")) {
+        qWarning() << "Failed to register DBus service:" << bus.lastError();
+    }
     bus.registerObject("/org/rocket/Settings", this);
 }
 

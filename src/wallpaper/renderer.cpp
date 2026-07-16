@@ -10,6 +10,8 @@
 #include <QQmlComponent>
 #include <QQuickItem>
 #include <QDBusConnection>
+#include <QDBusError>
+#include <QSizeF>
 #include <LayerShellQt/Window>
 
 WallpaperRendererAdaptor::WallpaperRendererAdaptor(QObject* parent)
@@ -49,11 +51,19 @@ WallpaperRenderer::WallpaperRenderer(QWindow* parent)
     }
 
     m_engine = new QQmlEngine(this);
+    m_engine->addImportPath("qrc:/qml/common");
     m_component = new QQmlComponent(m_engine, QUrl("qrc:/qml/wallpaper/WallpaperRenderer.qml"));
     if (!m_component->isError()) {
         QQuickItem* root = qobject_cast<QQuickItem*>(m_component->create());
         if (root) {
             root->setParentItem(contentItem());
+            root->setSize(QSizeF(contentItem()->width(), contentItem()->height()));
+            connect(contentItem(), &QQuickItem::widthChanged, this, [this, root]() {
+                root->setWidth(contentItem()->width());
+            });
+            connect(contentItem(), &QQuickItem::heightChanged, this, [this, root]() {
+                root->setHeight(contentItem()->height());
+            });
             m_qmlRoot = root;
         }
     } else {
@@ -63,7 +73,9 @@ WallpaperRenderer::WallpaperRenderer(QWindow* parent)
     loadConfig();
 
     QDBusConnection bus = QDBusConnection::sessionBus();
-    bus.registerService("org.rocket.Wallpaper");
+    if (!bus.registerService("org.rocket.Wallpaper")) {
+        qWarning() << "Failed to register DBus service:" << bus.lastError();
+    }
     bus.registerObject("/org/rocket/Wallpaper", this);
 
     if (!m_imagePath.isEmpty()) {

@@ -2,7 +2,7 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Window 2.15
-import "../common" as Common
+import Common
 
 Item {
     id: root
@@ -14,7 +14,6 @@ Item {
     property int selectedIndex: 0
     property string currentView: "categories"
     property string currentCategory: ""
-    property string appFilter: "all"
     property string appFilter: "all"  // "all", "system", "user"
 
     signal launchApp(string desktopFile)

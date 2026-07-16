@@ -1,5 +1,6 @@
 #include "power_manager.h"
 #include <QDBusConnection>
+#include <QDBusError>
 #include <QDBusInterface>
 #include <QDBusPendingCall>
 
@@ -18,7 +19,9 @@ PowerManager::PowerManager(QObject* parent)
     updateCapabilities();
 
     QDBusConnection bus = QDBusConnection::systemBus();
-    bus.registerService("org.rocket.Power");
+    if (!bus.registerService("org.rocket.Power")) {
+        qWarning() << "Failed to register DBus service:" << bus.lastError();
+    }
     bus.registerObject("/org/rocket/Power", this);
 }
 
@@ -59,7 +62,12 @@ void PowerManager::lock() {
         "org.freedesktop.ScreenSaver",
         "/org/freedesktop/ScreenSaver",
         "org.freedesktop.ScreenSaver",
-        QDBusConnection::systemBus());
+        QDBusConnection::sessionBus());
+
+    if (!screenSaver.isValid()) {
+        qWarning() << "ScreenSaver DBus interface not available";
+        return;
+    }
 
     screenSaver.asyncCall("Lock");
 }
